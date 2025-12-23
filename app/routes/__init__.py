@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify, Flask
+from flask import request, jsonify, Flask
 
-bp = Blueprint('routes', __name__)
+app = Flask(__name__)
 
 
-@bp.route('/request/forward', methods=['POST'])
+@app.route('/request/forward', methods=['POST'])
 def request_forward():
     """Forward a request"""
     data = request.get_json()
@@ -11,7 +11,7 @@ def request_forward():
     return jsonify({'message': 'Request forwarded successfully', 'data': data}), 200
 
 
-@bp.route('/request/accept', methods=['POST'])
+@app.route('/request/accept', methods=['POST'])
 def request_accept():
     """Accept a request"""
     data = request.get_json()
@@ -19,7 +19,7 @@ def request_accept():
     return jsonify({'message': 'Request accepted successfully', 'data': data}), 200
 
 
-@bp.route('/request/update', methods=['PUT'])
+@app.route('/request/update', methods=['PUT'])
 def request_update():
     """Update a request"""
     data = request.get_json()
@@ -27,7 +27,7 @@ def request_update():
     return jsonify({'message': 'Request updated successfully', 'data': data}), 200
 
 
-@bp.route('/request/delete', methods=['DELETE'])
+@app.route('/request/delete', methods=['DELETE'])
 def request_delete():
     """Delete a request"""
     data = request.get_json()
@@ -36,6 +36,4 @@ def request_delete():
 
 
 if __name__ == '__main__':
-    app = Flask(__name__)
-    app.register_blueprint(bp)
     app.run(debug=True, host='0.0.0.0', port=5800)
