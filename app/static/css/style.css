@@ -1,5 +1,8 @@
-/*
-:root {
-  
+@font-face {
+  font-family: "Inter";
+  src: url("/static/css/fonts/Inter-VariableFont_opsz,wght.ttf");
 }
-*/
+
+:root {
+  --bs-body-font-family: "Inter";
+}
