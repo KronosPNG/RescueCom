@@ -19,7 +19,7 @@ def request_accept():
     return jsonify({'message': 'Request accepted successfully', 'data': data}), 200
 
 
-@app.route('/request/update', methods=['PUT'])
+@app.route('/request/update', methods=['POST'])
 def request_update():
     """Update a request"""
     data = request.get_json()
@@ -27,7 +27,7 @@ def request_update():
     return jsonify({'message': 'Request updated successfully', 'data': data}), 200
 
 
-@app.route('/request/delete', methods=['DELETE'])
+@app.route('/request/delete', methods=['POST'])
 def request_delete():
     """Delete a request"""
     data = request.get_json()
