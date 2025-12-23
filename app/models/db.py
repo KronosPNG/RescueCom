@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Self
 
 import sqlite3
+from models import user
 
 
 class DatabaseManager:
@@ -64,3 +65,15 @@ class DatabaseManager:
             self.conn.execute(sub_query)
 
         self.conn.commit()
+
+    def insert_user(self, user: user.User) -> None:
+        insert_query: str = "INSERT INTO user(uuid, is_rescuer, name, surname, birthday, blood_type, health_info_str) VALUES(?, ?, ?, ?, ?, ?, ?)"
+
+        # Begin transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.conn.execute(insert_query, user.to_db_tuple())
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
