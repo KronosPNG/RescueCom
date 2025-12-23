@@ -18,6 +18,7 @@ class DatabaseManager:
         # self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
+        self.__init_db()
 
     @classmethod
     def get_instance(cls: type[Self], db_path: str | None = None) -> Self:
@@ -30,3 +31,36 @@ class DatabaseManager:
             cls.__allow_init = False
 
         return cls.__instance
+
+    def __init_db(self) -> None:
+        schema: str = """
+        CREATE TABLE IF NOT EXISTS user (
+            uuid TEXT PRIMARY KEY,
+            is_rescuer INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            surname TEXT NOT NULL,
+            birthday DATE NOT NULL,
+            blood_type INTEGER NOT NULL,
+            health_info_str TEXT DEFAULT '',
+
+            CHECK (blood_type IN ('ANEG', 'APOS', 'BPOS', 'BNEG', 'OPOS', 'ONEG', 'ABPOS', 'ABNEG'))
+        );
+
+        CREATE TABLE IF NOT EXISTS emergency (
+            id INTEGER PRIMARY KEY,
+            user_uuid TEXT NOT NULL,
+            position TEXT NULL DEFAULT '0,0,0',
+            address TEXT NOT NULL,
+            city TEXT NOT NULL,
+            street_number INTEGER NOT NULL,
+            place_description TEXT,
+            photo_b64 TEXT,
+            resolved INTEGER NOT NULL,
+            details_json TEXT
+        );
+        """
+
+        for sub_query in schema.split(";"):
+            self.conn.execute(sub_query)
+
+        self.conn.commit()
