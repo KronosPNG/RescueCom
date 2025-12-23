@@ -23,6 +23,25 @@ class DatabaseManager:
 
     @classmethod
     def get_instance(cls: type[Self], db_path: str | None = None) -> Self:
+        """
+        Returns the singleton instance of DatabaseManager.
+
+        This class method implements the Singleton pattern. On the first call,
+        a database path must be provided to initialize the underlying SQLite
+        connection. Subsequent calls will return the already-created instance
+        and will ignore the `db_path` parameter.
+
+        Args:
+            db_path (str | None): Path to the SQLite database file. This parameter
+                is required only on the first invocation.
+
+        Returns:
+            DatabaseManager: The singleton instance of the database manager.
+
+        Raises:
+            ValueError: If `db_path` is not provided on the first invocation.
+        """
+
         if cls.__instance is None:
             if db_path is None:
                 raise ValueError("'db_path' required on first initialization")
@@ -34,6 +53,10 @@ class DatabaseManager:
         return cls.__instance
 
     def __init_db(self) -> None:
+        """
+        Initialize the database by creating the schema.
+        """
+
         schema: str = """
         CREATE TABLE IF NOT EXISTS user (
             uuid TEXT PRIMARY KEY,
@@ -67,6 +90,21 @@ class DatabaseManager:
         self.conn.commit()
 
     def insert_user(self, user: user.User) -> None:
+        """
+        Inserts a User into the database.
+
+        The operation is wrapped in an explicit transaction:
+        the transaction is committed on success and rolled back if an error
+        occurs.
+
+        Args:
+            user (user.User): The User instance to be inserted into the database.
+
+        Raises:
+            sqlite3.Error: If the insertion fails, the transaction is rolled back
+                and the original database error is re-raised.
+        """
+
         insert_query: str = "INSERT INTO user(uuid, is_rescuer, name, surname, birthday, blood_type, health_info_str) VALUES(?, ?, ?, ?, ?, ?, ?)"
 
         # Begin transaction
@@ -79,6 +117,22 @@ class DatabaseManager:
             raise e
 
     def insert_emergency(self, emergency: emergency.Emergency) -> None:
+        """
+        Inserts an Emergency into the database.
+
+        The operation is wrapped in an explicit transaction:
+        the transaction is committed on success and rolled back if an error
+        occurs.
+
+        Args:
+            emergency (emergency.Emergency): The Emergency instance to be
+                inserted into the database.
+
+        Raises:
+            sqlite3.Error: If the insertion fails, the transaction is rolled back
+                and the original database error is re-raised.
+        """
+
         insert_query: str = """
             INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64, resolved, details_json)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

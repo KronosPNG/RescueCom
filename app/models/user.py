@@ -42,6 +42,25 @@ class User:
         self.health_info_str = health_info_json
 
     def to_db_tuple(self) -> tuple:
+        """
+        Converts the user instance into a tuple suitable for SQLite insertion.
+
+        The returned tuple contains the user attributes in a fixed order,
+        matching the expected parameter order of the insert query.
+        Enum values (blood_type) are converted to their string representation to
+        ensure compatibility with SQLite storage.
+
+        Returns:
+            tuple: A tuple containing the following values, in order:
+                - uuid (str): UUID of the user.
+                - is_rescuer (bool): Whether the user is a rescuer.
+                - name (str): User's first name.
+                - surname (str): User's last name.
+                - birthday (datetime.date): User's date of birth.
+                - blood_type (str): Name of the blood type enum (e.g., "ONEG").
+                - health_info_str (str): Serialized health information.
+        """
+
         return (
             self.uuid,
             self.is_rescuer,

@@ -36,6 +36,27 @@ class Emergency:
         self.details_json = details_json
 
     def to_db_tuple(self) -> tuple:
+        """
+        Converts the emergency instance into a tuple suitable for SQLite insertion.
+
+        The returned tuple contains the emergency attributes in a fixed order,
+        matching the expected parameter order of the insert query.
+        The `position` tuple is serialized as a comma-separated string.
+
+        Returns:
+            tuple: A tuple containing the following values, in order:
+                - id (int): Unique identifier of the emergency.
+                - user_uuid (str): UUID of the user who created the emergency.
+                - position (str): Serialized position as "x,y,z".
+                - address (str): Street address of the emergency.
+                - city (str): City where the emergency occurred.
+                - street_number (int): Street number of the address.
+                - place_description (str): Additional place description.
+                - photo_b64 (str): Base64-encoded photo associated with the emergency.
+                - resolved (bool): Whether the emergency has been resolved.
+                - details_json (str): Serialized emergency details.
+        """
+
         return (
             self.id,
             self.user_uuid,
