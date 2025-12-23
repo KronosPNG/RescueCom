@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Self
 
 import sqlite3
-from models import user
+from models import emergency, user
 
 
 class DatabaseManager:
@@ -73,6 +73,23 @@ class DatabaseManager:
         self.conn.execute("BEGIN")
         try:
             self.conn.execute(insert_query, user.to_db_tuple())
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
+
+    def insert_emergency(self, emergency: emergency.Emergency) -> None:
+        insert_query: str = """
+            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64, resolved, details_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
+        # Begin transaction
+        self.conn.execute("BEGIN")
+        try:
+            # Skip the field `id`
+            vales = emergency.to_db_tuple()[1:]
+            self.conn.execute(insert_query, vales)
             self.conn.commit()
         except self.conn.Error as e:
             self.conn.rollback()
