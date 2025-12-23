@@ -34,3 +34,18 @@ class Emergency:
         self.photo_b64 = photo_b64
         self.resolved = resolved
         self.details_json = details_json
+
+    def to_db_tuple(self) -> tuple:
+        return (
+            self.id,
+            self.user_uuid,
+            # NOTE: Saved in the db as: "x,y,z"
+            f"{self.position[0]},{self.position[1]},{self.position[2]}",
+            self.address,
+            self.city,
+            self.street_number,
+            self.place_description,
+            self.photo_b64,
+            self.resolved,
+            self.details_json,
+        )

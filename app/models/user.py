@@ -40,3 +40,14 @@ class User:
         self.birthday = birthday
         self.blood_type = blood_type
         self.health_info_str = health_info_json
+
+    def to_db_tuple(self) -> tuple:
+        return (
+            self.uuid,
+            self.is_rescuer,
+            self.name,
+            self.surname,
+            self.birthday,
+            self.blood_type.name,  # The enum name (e.g: ONEG -> "ONEG")
+            self.health_info_str,
+        )
