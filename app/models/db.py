@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Self
+from typing import List, Self
 
 import sqlite3
+from datetime import datetime
 from models import emergency, user, enc_emergency
 
 
@@ -203,3 +204,49 @@ class DatabaseManager:
         except self.conn.Error as e:
             self.conn.rollback()
             raise e
+
+    def get_users(self) -> List[user.User]:
+        """
+        Retrieves all users stored in the database.
+
+        This method queries the `user` table and converts each database row
+        into a `User` object. Database-specific representations are
+        translated into application-level types.
+
+        Returns:
+            List[user.User]: A list of User instances representing all users
+            currently stored in the database.
+
+        Raises:
+            sqlite3.Error: If an error occurs while executing the SELECT query
+                or fetching the results.
+            ValueError: If the stored date or enum values cannot be parsed into
+                the expected Python types.
+        """
+
+        select_query = """
+            SELECT uuid, is_rescuer, name, surname, birthday, blood_type, health_info_json
+            FROM user
+        """
+
+        self.cursor.execute(select_query)
+        result = self.cursor.fetchall()
+
+        users = []
+
+        for row in result:
+            users.append(
+                user.User(
+                    row[0],  # uuid
+                    row[1] == 1,  # If true the user is a Rescuer
+                    row[2],  # name
+                    row[3],  # surname
+                    datetime.strptime(
+                        row[4], "%Y-%m-%d %H:%M:%S.%f"
+                    ).date(),  # birthday
+                    user.BloodType[row[5]],  # blood_type
+                    row[6],  # health_info_json
+                )
+            )
+
+        return users
