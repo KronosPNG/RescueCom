@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Self
 
 import sqlite3
-from models import emergency, user
+from models import emergency, user, enc_emergency
 
 
 class DatabaseManager:
@@ -87,6 +87,24 @@ class DatabaseManager:
 
             FOREIGN KEY (user_uuid) REFERENCES user(uuid)
         );
+
+        CREATE TABLE IF NOT EXISTS encrypted_emergency (
+            id INTEGER PRIMARY KEY,
+            user_uuid TEXT NOT NULL,
+            routing_info_json TEXT NOT NULL,
+            blob BLOB NOT NULL,
+
+            /*
+                In order to prevent the violation of
+                the foreign key constraint, when the user
+                receives an emergency from another user,
+                the sender must also send their user details,
+                and the receiver must insert them into the
+                `user` table before inserting the newly
+                received emergency.
+            */
+            FOREIGN KEY (user_uuid) REFERENCES user(uuid)
+        );
         """
 
         for sub_query in schema.split(";"):
@@ -149,6 +167,38 @@ class DatabaseManager:
             # Skip the field `id`
             vales = emergency.to_db_tuple()[1:]
             self.conn.execute(insert_query, vales)
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
+
+    def insert_encrypted_emergency(
+        self, enc_emergency: enc_emergency.EncryptedEmergency
+    ) -> None:
+        """
+        Inserts an EncryptedEmergency into the database.
+
+        The operation is wrapped in an explicit transaction:
+        the transaction is committed on success and rolled back if an error
+        occurs.
+
+        Args:
+            enc_emergency (emergency.Emergency): The EncryptedEmergency instance to be
+                inserted into the database.
+
+        Raises:
+            sqlite3.Error: If the insertion fails, the transaction is rolled back
+                and the original database error is re-raised.
+        """
+
+        insert_query = "INSERT INTO encrypted_emergency(user_uuid, routing_info_json, blob) VALUES (?, ?, ?)"
+
+        # Begin transaction
+        self.conn.execute("BEGIN")
+        try:
+            # Skip the field `id`
+            values = enc_emergency.to_db_tuple()[1:]
+            self.conn.execute(insert_query, values)
             self.conn.commit()
         except self.conn.Error as e:
             self.conn.rollback()
