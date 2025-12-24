@@ -83,7 +83,9 @@ class DatabaseManager:
             place_description TEXT,
             photo_b64 TEXT,
             resolved INTEGER NOT NULL,
-            details_json TEXT
+            details_json TEXT,
+
+            FOREIGN KEY (user_uuid) REFERENCES user(uuid)
         );
         """
 
