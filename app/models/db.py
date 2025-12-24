@@ -87,6 +87,24 @@ class DatabaseManager:
 
             FOREIGN KEY (user_uuid) REFERENCES user(uuid)
         );
+
+        CREATE TABLE IF NOT EXISTS encrypted_emergency (
+            id INTEGER PRIMARY KEY,
+            user_uuid TEXT NOT NULL,
+            routing_info_json TEXT NOT NULL,
+            blob BLOB NOT NULL,
+
+            /*
+                In order to prevent the violation of
+                the foreign key constraint, when the user
+                receives an emergency from another user,
+                the sender must also send their user details,
+                and the receiver must insert them into the
+                `user` table before inserting the newly
+                received emergency.
+            */
+            FOREIGN KEY (user_uuid) REFERENCES user(uuid)
+        );
         """
 
         for sub_query in schema.split(";"):
