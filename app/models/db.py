@@ -19,6 +19,9 @@ class DatabaseManager:
         # self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn = sqlite3.connect(db_path)
         self.cursor = self.conn.cursor()
+        # Enable Foreign Key constraints. It's disabled by default
+        # See: https://sqlite.org/foreignkeys.html "Overview" and "2. Enabling Foreign Key Support"
+        self.conn.execute("PRAGMA foreign_keys = ON")
         self.__init_db()
 
     @classmethod
