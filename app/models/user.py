@@ -21,7 +21,7 @@ class User:
     birthday: datetime.date
     blood_type: BloodType
     # TODO: could be a new table
-    health_info_str: str
+    health_info_json: str
 
     def __init__(
         self,
@@ -39,7 +39,7 @@ class User:
         self.surname = surname
         self.birthday = birthday
         self.blood_type = blood_type
-        self.health_info_str = health_info_json
+        self.health_info_json = health_info_json
 
     def to_db_tuple(self) -> tuple:
         """
@@ -58,7 +58,7 @@ class User:
                 - surname (str): User's last name.
                 - birthday (datetime.date): User's date of birth.
                 - blood_type (str): Name of the blood type enum (e.g., "ONEG").
-                - health_info_str (str): Serialized health information.
+                - health_info_json (str): Serialized health information.
         """
 
         return (
@@ -68,5 +68,5 @@ class User:
             self.surname,
             self.birthday,
             self.blood_type.name,  # The enum name (e.g: ONEG -> "ONEG")
-            self.health_info_str,
+            self.health_info_json,
         )

@@ -65,7 +65,7 @@ class DatabaseManager:
             surname TEXT NOT NULL,
             birthday DATE NOT NULL,
             blood_type INTEGER NOT NULL,
-            health_info_str TEXT DEFAULT '',
+            health_info_json TEXT DEFAULT '',
 
             CHECK (blood_type IN ('ANEG', 'APOS', 'BPOS', 'BNEG', 'OPOS', 'ONEG', 'ABPOS', 'ABNEG'))
         );
@@ -105,7 +105,7 @@ class DatabaseManager:
                 and the original database error is re-raised.
         """
 
-        insert_query: str = "INSERT INTO user(uuid, is_rescuer, name, surname, birthday, blood_type, health_info_str) VALUES(?, ?, ?, ?, ?, ?, ?)"
+        insert_query: str = "INSERT INTO user(uuid, is_rescuer, name, surname, birthday, blood_type, health_info_json) VALUES(?, ?, ?, ?, ?, ?, ?)"
 
         # Begin transaction
         self.conn.execute("BEGIN")
