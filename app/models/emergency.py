@@ -1,7 +1,7 @@
 class Emergency:
     id: int
     user_uuid: str
-    position: tuple[float, float, float]
+    position: tuple[float, float]
     address: str
     city: str
     street_number: int
@@ -19,7 +19,7 @@ class Emergency:
         city: str,
         street_number: int,
         resolved: bool,
-        position: tuple[float, float, float] = (0.0, 0.0, 0.0),
+        position: tuple[float, float] = (0.0, 0.0),
         place_description: str = "",
         photo_b64: str = "",
         details_json: str = "",
@@ -47,7 +47,7 @@ class Emergency:
             tuple: A tuple containing the following values, in order:
                 - id (int): Unique identifier of the emergency.
                 - user_uuid (str): UUID of the user who created the emergency.
-                - position (str): Serialized position as "x,y,z".
+                - position (str): Serialized position as "x,y".
                 - address (str): Street address of the emergency.
                 - city (str): City where the emergency occurred.
                 - street_number (int): Street number of the address.
@@ -60,8 +60,8 @@ class Emergency:
         return (
             self.id,
             self.user_uuid,
-            # NOTE: Saved in the db as: "x,y,z"
-            f"{self.position[0]},{self.position[1]},{self.position[2]}",
+            # NOTE: Saved in the db as: "x,y"
+            f"{self.position[0]},{self.position[1]}",
             self.address,
             self.city,
             self.street_number,
