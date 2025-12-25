@@ -402,3 +402,51 @@ class DatabaseManager:
             )
 
         return rescuees
+
+    def get_emergencies(self) -> List[emergency.Emergency]:
+        """
+        Retrieves all emergencies stored in the database.
+
+        This method queries the `emergency` table and converts each database row
+        into a `Emergency` object. Database-specific representations are
+        translated into application-level types.
+
+        Returns:
+            List[emergency.Emergency]: A list of Emergency instances representing all
+            emergencies currently stored in the database.
+
+        Raises:
+            sqlite3.Error: If an error occurs while executing the SELECT query
+                or fetching the results.
+            ValueError: If the stored date or enum values cannot be parsed into
+                the expected Python types.
+        """
+
+        select_query = """
+            SELECT id, user_uuid, position, address, city, street_number,
+            place_description, photo_b64, resolved, details_json
+            FROM emergency
+        """
+
+        self.cursor.execute(select_query)
+        result = self.cursor.fetchall()
+
+        emergencies = []
+
+        for row in result:
+            emergencies.append(
+                emergency.Emergency(
+                    id=row[0],
+                    user_uuid=row[1],
+                    position=tuple(row[2].split(",")),
+                    address=row[3],
+                    city=row[4],
+                    street_number=row[5],
+                    place_description=row[6],
+                    photo_b64=row[7],
+                    resolved=row[8] == 1,  # If True the emergency is resolved
+                    details_json=row[9],
+                )
+            )
+
+        return emergencies
