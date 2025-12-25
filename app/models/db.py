@@ -445,6 +445,58 @@ class DatabaseManager:
 
         return emergencies
 
+    def get_emergency_by_id(
+        self, user_uuid: str, id: int
+    ) -> emergency.Emergency | None:
+        """
+        Retrieves a specific emergency by user UUID and emergency ID.
+
+        This method queries the `emergency` table for the emergency with the
+        user UUID and ID passed as argument and converts the resulting database
+        row into an `Emergency` object. Database-specific representations
+        are translated into application-level types.
+
+        Args:
+            user_uuid (str): The UUID of the user associated with the emergency.
+            id (int): The ID of the emergency to retrieve.
+
+        Returns:
+            emergency.Emergency | None: The `Emergency` instance corresponding to
+            the given user UUID and ID, or `None` if no matching record is found.
+
+        Raises:
+            sqlite3.Error: If an error occurs while executing the SELECT query
+                or fetching the result.
+            ValueError: If the stored position or other fields cannot be parsed
+                into the expected Python types.
+        """
+
+        select_query = """
+            SELECT id, user_uuid, position, address, city, street_number,
+            place_description, photo_b64, resolved, details_json
+            FROM emergency
+            WHERE user_uuid = ? AND id = ?
+        """
+
+        self.cursor.execute(select_query, (user_uuid, id))
+        result = self.cursor.fetchone()
+
+        if result is None:
+            return None
+
+        return emergency.Emergency(
+            id=result[0],
+            user_uuid=result[1],
+            position=tuple(result[2].split(",")),
+            address=result[3],
+            city=result[4],
+            street_number=result[5],
+            place_description=result[6],
+            photo_b64=result[7],
+            resolved=result[8] == 1,  # If True the emergency is resolved
+            details_json=result[9],
+        )
+
     def get_emergencies_by_user_uuid(self, user_uuid: str) -> List[emergency.Emergency]:
         """
         Retrieves all emergencies associated with a specific user UUID.
