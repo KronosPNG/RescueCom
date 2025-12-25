@@ -444,3 +444,57 @@ class DatabaseManager:
             )
 
         return emergencies
+
+    def get_emergencies_by_user_uuid(self, user_uuid: str) -> List[emergency.Emergency]:
+        """
+        Retrieves all emergencies associated with a specific user UUID.
+
+        This method queries the `emergency` table for all the emergencies matching
+        the user UUID passed as an argument and converts each resulting
+        database row into an `Emergency` object. Database-specific representations
+        are translated into application-level types.
+
+        Args:
+            user_uuid (str): The UUID of the user whose emergencies are to be
+                retrieved.
+
+        Returns:
+            List[emergency.Emergency]: A list of Emergency instances associated
+            with the specified user.
+
+        Raises:
+            sqlite3.Error: If an error occurs while executing the SELECT query
+                or fetching the results.
+            ValueError: If the stored position or other fields cannot be parsed
+                into the expected Python types.
+        """
+
+        select_query = """
+            SELECT id, user_uuid, position, address, city, street_number,
+            place_description, photo_b64, resolved, details_json
+            FROM emergency
+            WHERE user_uuid = ?
+        """
+
+        self.cursor.execute(select_query, (user_uuid,))
+        result = self.cursor.fetchall()
+
+        emergencies = []
+
+        for row in result:
+            emergencies.append(
+                emergency.Emergency(
+                    id=row[0],
+                    user_uuid=row[1],
+                    position=tuple(row[2].split(",")),
+                    address=row[3],
+                    city=row[4],
+                    street_number=row[5],
+                    place_description=row[6],
+                    photo_b64=row[7],
+                    resolved=row[8] == 1,  # If True the emergency is resolved
+                    details_json=row[9],
+                )
+            )
+
+        return emergencies
