@@ -237,15 +237,13 @@ class DatabaseManager:
         for row in result:
             users.append(
                 user.User(
-                    row[0],  # uuid
-                    row[1] == 1,  # If true the user is a Rescuer
-                    row[2],  # name
-                    row[3],  # surname
-                    datetime.strptime(
-                        row[4], "%Y-%m-%d %H:%M:%S.%f"
-                    ).date(),  # birthday
-                    user.BloodType[row[5]],  # blood_type
-                    row[6],  # health_info_json
+                    uuid=row[0],
+                    is_rescuer=row[1] == 1,
+                    name=row[2],
+                    surname=row[3],
+                    birthday=datetime.strptime(row[4], "%Y-%m-%d %H:%M:%S.%f").date(),
+                    blood_type=user.BloodType[row[5]],
+                    health_info_json=row[6],
                 )
             )
 
@@ -290,13 +288,13 @@ class DatabaseManager:
             return None
 
         return user.User(
-            result[0],  # uuid
-            result[1] == 1,  # If true the user is a Rescuer
-            result[2],  # name
-            result[3],  # surname
-            datetime.strptime(result[4], "%Y-%m-%d %H:%M:%S.%f").date(),  # birthday
-            user.BloodType[result[5]],  # blood_type
-            result[6],  # health_info_json
+            uuid=result[0],
+            is_rescuer=result[1] == 1,
+            name=result[2],
+            surname=result[3],
+            birthday=datetime.strptime(result[4], "%Y-%m-%d %H:%M:%S.%f").date(),
+            blood_type=user.BloodType[result[5]],
+            health_info_json=result[6],
         )
 
     def get_rescuers(self) -> List[user.User]:
@@ -337,15 +335,13 @@ class DatabaseManager:
         for row in result:
             rescuers.append(
                 user.User(
-                    row[0],  # uuid
-                    row[1],  # is_rescuer
-                    row[2],  # name
-                    row[3],  # surname
-                    datetime.strptime(
-                        row[4], "%Y-%m-%d %H:%M:%S.%f"
-                    ).date(),  # birthday
-                    user.BloodType[row[5]],  # blood_type
-                    row[6],  # health_info_json
+                    uuid=row[0],
+                    is_rescuer=row[1] == 1,
+                    name=row[2],
+                    surname=row[3],
+                    birthday=datetime.strptime(row[4], "%Y-%m-%d %H:%M:%S.%f").date(),
+                    blood_type=user.BloodType[row[5]],
+                    health_info_json=row[6],
                 )
             )
 
@@ -389,15 +385,13 @@ class DatabaseManager:
         for row in result:
             rescuees.append(
                 user.User(
-                    row[0],  # uuid
-                    row[1],  # is_rescuer
-                    row[2],  # name
-                    row[3],  # surname
-                    datetime.strptime(
-                        row[4], "%Y-%m-%d %H:%M:%S.%f"
-                    ).date(),  # birthday
-                    user.BloodType[row[5]],  # blood_type
-                    row[6],  # health_info_json
+                    uuid=row[0],
+                    is_rescuer=row[1] == 1,
+                    name=row[2],
+                    surname=row[3],
+                    birthday=datetime.strptime(row[4], "%Y-%m-%d %H:%M:%S.%f").date(),
+                    blood_type=user.BloodType[row[5]],
+                    health_info_json=row[6],
                 )
             )
 
