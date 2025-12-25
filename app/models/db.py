@@ -250,3 +250,51 @@ class DatabaseManager:
             )
 
         return users
+
+    def get_user_by_uuid(self, uuid: str) -> user.User | None:
+        """
+        Retrieves a user by uuid.
+
+        This method queries the `user` table for the user with the UUID
+        passed as an argument and converts each database row into a `User`
+        object. Database-specific representations are translated into
+        application-level types.
+
+        Args:
+            uuid (str): The UUID of the user to retrieve.
+
+        Returns:
+            user.User | None: The `User` instance corresponding to the given UUID,
+            or `None` if no matching user is found.
+
+        Returns:
+            user.User: The user with the corresponding UUID.
+
+        Raises:
+            sqlite3.Error: If an error occurs while executing the SELECT query
+                or fetching the results.
+            ValueError: If the stored date or enum values cannot be parsed into
+                the expected Python types.
+        """
+
+        select_query = """
+            SELECT uuid, is_rescuer, name, surname, birthday, blood_type, health_info_json
+            FROM user
+            WHERE uuid = ?
+        """
+
+        self.cursor.execute(select_query, (uuid,))
+        result = self.cursor.fetchone()
+
+        if result is None:
+            return None
+
+        return user.User(
+            result[0],  # uuid
+            result[1] == 1,  # If true the user is a Rescuer
+            result[2],  # name
+            result[3],  # surname
+            datetime.strptime(result[4], "%Y-%m-%d %H:%M:%S.%f").date(),  # birthday
+            user.BloodType[result[5]],  # blood_type
+            result[6],  # health_info_json
+        )
