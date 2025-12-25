@@ -298,3 +298,55 @@ class DatabaseManager:
             user.BloodType[result[5]],  # blood_type
             result[6],  # health_info_json
         )
+
+    def get_rescuers(self) -> List[user.User]:
+        """
+        Retrieves all Rescuers stored in the database.
+
+        This method queries the `user` table for the role of Rescuer (is_rescuer = 1)
+        and converts each database row into a `User` object. Database-specific
+        representations are translated into application-level types.
+
+        This method queries the `user` table for users whose `is_rescuer` flag
+        is set to true (value `1` in the database) and converts each database
+        row into a `User` object. Database-specific representations are
+        translated into application-level types.
+
+        Returns:
+            List[user.User]: A list of User instances representing all Rescuers
+            currently stored in the database.
+
+        Raises:
+            sqlite3.Error: If an error occurs while executing the SELECT query
+                or fetching the results.
+            ValueError: If the stored date or enum values cannot be parsed into
+                the expected Python types.
+        """
+
+        select_query = """
+            SELECT uuid, is_rescuer, name, surname, birthday, blood_type, health_info_json
+            FROM user
+            WHERE is_rescuer = 1
+        """
+
+        self.cursor.execute(select_query)
+        result = self.cursor.fetchall()
+
+        rescuers = []
+
+        for row in result:
+            rescuers.append(
+                user.User(
+                    row[0],  # uuid
+                    row[1],  # is_rescuer
+                    row[2],  # name
+                    row[3],  # surname
+                    datetime.strptime(
+                        row[4], "%Y-%m-%d %H:%M:%S.%f"
+                    ).date(),  # birthday
+                    user.BloodType[row[5]],  # blood_type
+                    row[6],  # health_info_json
+                )
+            )
+
+        return rescuers
