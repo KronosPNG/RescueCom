@@ -99,8 +99,8 @@ class DatabaseManager:
                 In order to prevent the violation of
                 the foreign key constraint, when the user
                 receives an emergency from another user,
-                the sender must also send their user details,
-                and the receiver must insert them into the
+                the sender must also send their user_uuid,
+                and the receiver must insert it into the
                 `user` table before inserting the newly
                 received emergency.
             */
