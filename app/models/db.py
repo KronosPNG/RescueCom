@@ -77,7 +77,7 @@ class DatabaseManager:
         CREATE TABLE IF NOT EXISTS emergency (
             id INTEGER PRIMARY KEY,
             user_uuid TEXT NOT NULL,
-            position TEXT NULL DEFAULT '0,0',
+            position TEXT DEFAULT '0,0',
             address TEXT NOT NULL,
             city TEXT NOT NULL,
             street_number INTEGER NOT NULL,
