@@ -589,3 +589,38 @@ class DatabaseManager:
             )
 
         return enc_emergencies
+
+    def update_user(self, uuid: str, user: user.User) -> None:
+        """
+        Updates an existing user record in the database.
+
+        This method updates the fields of a user identified by the given UUID
+        using the values provided by the `User` instance. The update operation
+        is executed within an explicit transaction: changes are committed on
+        success and rolled back if an error occurs.
+
+        Args:
+            uuid (str): The UUID of the user record to update.
+            user (user.User): A User instance containing the updated values.
+                The UUID field of the object is not used for identification.
+
+        Raises:
+            sqlite3.Error: If the update operation fails, the transaction is
+                rolled back and the original database error is re-raised.
+        """
+
+        update_query = """
+            UPDATE user
+            SET is_rescuer = ?, name = ?, surname = ?, birthday = ?,
+            blood_type = ?, health_info_json = ?
+            WHERE uuid = ?
+        """
+
+        # Beging transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.cursor.execute(update_query, (*user.to_db_tuple()[1:], uuid))
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
