@@ -668,3 +668,34 @@ class DatabaseManager:
         except self.conn.Error as e:
             self.conn.rollback()
             raise e
+
+    def delete_user(self, uuid: str) -> None:
+        """
+        Deletes a user record from the database.
+
+        This method removes the user identified by the given UUID from the
+        `user` table. The deletion is executed within an explicit transaction:
+        the transaction is committed on success and rolled back if an error
+        occurs.
+
+        Args:
+            uuid (str): The UUID of the user to delete.
+
+        Raises:
+            sqlite3.Error: If the deletion operation fails, the transaction is
+                rolled back and the original database error is re-raised.
+        """
+
+        delete_query = """
+            DELETE FROM user
+            WHERE uuid = ?
+        """
+
+        # Beging transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.cursor.execute(delete_query, (uuid,))
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
