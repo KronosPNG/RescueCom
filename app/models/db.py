@@ -550,3 +550,42 @@ class DatabaseManager:
             )
 
         return emergencies
+
+    def get_encrypted_emergencies(self) -> List[enc_emergency.EncryptedEmergency]:
+        """
+        Retrieves all encrypted emergencies stored in the database.
+
+        This method queries the `encrypted_emergency` table and converts each
+        database row into an `EncryptedEmergency` object.
+
+        Returns:
+            List[enc_emergency.EncryptedEmergency]: A list of EncryptedEmergency
+            instances representing all encrypted emergencies currently stored
+            in the database.
+
+        Raises:
+            sqlite3.Error: If an error occurs while executing the SELECT query
+                or fetching the results.
+        """
+
+        select_query = """
+            SELECT id, user_uuid, routing_info_json, blob
+            FROM encrypted_emergency
+        """
+
+        self.cursor.execute(select_query)
+        result = self.cursor.fetchall()
+
+        enc_emergencies = []
+
+        for row in result:
+            enc_emergencies.append(
+                enc_emergency.EncryptedEmergency(
+                    id=row[0],
+                    user_uuid=row[1],
+                    routing_info_json=row[2],
+                    blob=row[3],
+                )
+            )
+
+        return enc_emergencies
