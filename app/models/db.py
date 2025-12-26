@@ -731,3 +731,35 @@ class DatabaseManager:
         except self.conn.Error as e:
             self.conn.rollback()
             raise e
+
+    def delete_encrypted_emergencies(self, user_uuid: str) -> None:
+        """
+        Deletes all encrypted emergencies associated with a specific user UUID.
+
+        This method removes all records from the `encrypted_emergency` table
+        that are associated with the given user UUID. The deletion is executed
+        within an explicit transaction: changes are committed on success and
+        rolled back if an error occurs.
+
+        Args:
+            user_uuid (str): The UUID of the user whose encrypted emergencies
+                should be deleted.
+
+        Raises:
+            sqlite3.Error: If the deletion operation fails, the transaction is
+                rolled back and the original database error is re-raised.
+        """
+
+        delete_query = """
+            DELETE FROM encrypted_emergency
+            WHERE user_uuid = ?
+        """
+
+        # Beging transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.cursor.execute(delete_query, (user_uuid,))
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
