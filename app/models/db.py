@@ -624,3 +624,47 @@ class DatabaseManager:
         except self.conn.Error as e:
             self.conn.rollback()
             raise e
+
+    def update_emergency(
+        self, uuid: str, id: int, emergency: emergency.Emergency
+    ) -> None:
+        """
+        Updates an existing emergency record in the database.
+
+        This method updates the fields of an emergency identified by the given
+        emergency ID and user UUID using the values provided by the
+        `Emergency` instance. The update operation is executed within an
+        explicit transaction: changes are committed on success and rolled back
+        if an error occurs.
+
+        Args:
+            uuid (str): The UUID of the user associated with the emergency.
+            id (int): The unique identifier of the emergency to update.
+            emergency (emergency.Emergency): An Emergency instance containing
+                the updated values. The `id` and `user_uuid` fields of the
+                object are not used for record identification.
+
+        Raises:
+            sqlite3.Error: If the update operation fails, the transaction is
+                rolled back and the original database error is re-raised.
+        """
+
+        update_query = """
+            UPDATE emergency
+            position = ?, address = ?, city = ?, street_number = ?,
+            place_description = ?, photo_b64 = ?, resolved = ?,
+            details_json = ?
+            WHERE id = ? AND user_uuid = ?
+        """
+
+        # Beging transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.cursor.execute(
+                update_query,
+                (*emergency.to_db_tuple()[2:], id, uuid),
+            )
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
