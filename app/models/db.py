@@ -699,3 +699,35 @@ class DatabaseManager:
         except self.conn.Error as e:
             self.conn.rollback()
             raise e
+
+    def delete_emergency(self, user_uuid: str, id: int) -> None:
+        """
+        Deletes an emergency record from the database.
+
+        This method removes the emergency identified by the given emergency ID
+        and associated user UUID from the `emergency` table. The deletion is
+        executed within an explicit transaction: the transaction is committed
+        on success and rolled back if an error occurs.
+
+        Args:
+            user_uuid (str): The UUID of the user associated with the emergency.
+            id (int): The unique identifier of the emergency to delete.
+
+        Raises:
+            sqlite3.Error: If the deletion operation fails, the transaction is
+                rolled back and the original database error is re-raised.
+        """
+
+        delete_query = """
+            DELETE FROM emergency
+            WHERE id = ? AND user_uuid = ?
+        """
+
+        # Beging transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.cursor.execute(delete_query, (id, user_uuid))
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
