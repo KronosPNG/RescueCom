@@ -412,8 +412,8 @@ class DatabaseManager:
         Raises:
             sqlite3.Error: If an error occurs while executing the SELECT query
                 or fetching the results.
-            ValueError: If the stored date or enum values cannot be parsed into
-                the expected Python types.
+            ValueError: If the stored position or other fields cannot be parsed
+                into the expected Python types.
         """
 
         select_query = """
