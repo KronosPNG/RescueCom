@@ -94,3 +94,6 @@ pip-selfcheck.json
 
 ### PyCharm ###
 .idea
+
+### Test frontend
+/app/template_viewer.py
