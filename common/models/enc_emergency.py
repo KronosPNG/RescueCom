@@ -1,16 +1,16 @@
 class EncryptedEmergency:
-    id: int
+    emergency_id: int
     user_uuid: str
     routing_info_json: str
     blob: bytes
 
     def __init__(
-        self, user_uuid: str, routing_info_json: str, blob: bytes, id: int = 0
+        self, emergency_id: int, user_uuid: str, routing_info_json: str, blob: bytes
     ) -> None:
+        self.emergency_id = emergency_id
         self.user_uuid = user_uuid
         self.routing_info_json = routing_info_json
         self.blob = blob
-        self.id = id
 
     def to_db_tuple(self) -> tuple:
         """
@@ -21,13 +21,13 @@ class EncryptedEmergency:
 
         Returns:
             tuple: A tuple containing the following values, in order:
-                - id (int): Unique identifier of the emergency.
+                - emergency_id (int): Unique identifier of the emergency.
                 - user_uuid (str): UUID of the user who created the emergency.
                 - routing_info_json (str): Serialized routing informations.
                 - blob (bytes): encrypted values
         """
         return (
-            self.id,
+            self.emergency_id,
             self.user_uuid,
             self.routing_info_json,
             self.blob,

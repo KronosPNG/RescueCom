@@ -90,7 +90,7 @@ class DatabaseManager:
         );
 
         CREATE TABLE IF NOT EXISTS encrypted_emergency (
-            id INTEGER PRIMARY KEY,
+            emergency_id INTEGER NOT NULL,
             user_uuid TEXT NOT NULL,
             routing_info_json TEXT NOT NULL,
             blob BLOB NOT NULL,
@@ -104,7 +104,8 @@ class DatabaseManager:
                 `user` table before inserting the newly
                 received emergency.
             */
-            FOREIGN KEY (user_uuid) REFERENCES user(uuid)
+            FOREIGN KEY (user_uuid) REFERENCES user(uuid),
+            PRIMARY KEY (emergency_id, user_uuid)
         );
         """
 
@@ -581,7 +582,7 @@ class DatabaseManager:
         for row in result:
             enc_emergencies.append(
                 enc_emergency.EncryptedEmergency(
-                    id=row[0],
+                    emergency_id=row[0],
                     user_uuid=row[1],
                     routing_info_json=row[2],
                     blob=row[3],
@@ -732,18 +733,21 @@ class DatabaseManager:
             self.conn.rollback()
             raise e
 
-    def delete_encrypted_emergencies(self, user_uuid: str) -> None:
+    def delete_encrypted_emergency(self, user_uuid: str, emergency_id: int) -> None:
         """
-        Deletes all encrypted emergencies associated with a specific user UUID.
+        Deletes a specific encrypted emergency from the database.
 
-        This method removes all records from the `encrypted_emergency` table
-        that are associated with the given user UUID. The deletion is executed
-        within an explicit transaction: changes are committed on success and
-        rolled back if an error occurs.
+        This method removes the encrypted emergency record identified by the
+        given user UUID and emergency ID from the `encrypted_emergency` table.
+        The deletion is executed within an explicit transaction: the
+        transaction is committed on success and rolled back if an error
+        occurs.
 
         Args:
-            user_uuid (str): The UUID of the user whose encrypted emergencies
-                should be deleted.
+            user_uuid (str): The UUID of the user associated with the encrypted
+                emergency.
+            emergency_id (int): The unique identifier of the encrypted emergency
+                to delete.
 
         Raises:
             sqlite3.Error: If the deletion operation fails, the transaction is
@@ -752,13 +756,13 @@ class DatabaseManager:
 
         delete_query = """
             DELETE FROM encrypted_emergency
-            WHERE user_uuid = ?
+            WHERE user_uuid = ? AND emergency_id = ?
         """
 
         # Beging transaction
         self.conn.execute("BEGIN")
         try:
-            self.cursor.execute(delete_query, (user_uuid,))
+            self.cursor.execute(delete_query, (user_uuid, emergency_id))
             self.conn.commit()
         except self.conn.Error as e:
             self.conn.rollback()
