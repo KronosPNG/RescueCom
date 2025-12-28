@@ -90,7 +90,7 @@ class DatabaseManager:
         );
 
         CREATE TABLE IF NOT EXISTS encrypted_emergency (
-            id INTEGER PRIMARY KEY,
+            emergency_id INTEGER NOT NULL,
             user_uuid TEXT NOT NULL,
             routing_info_json TEXT NOT NULL,
             blob BLOB NOT NULL,
@@ -104,7 +104,8 @@ class DatabaseManager:
                 `user` table before inserting the newly
                 received emergency.
             */
-            FOREIGN KEY (user_uuid) REFERENCES user(uuid)
+            FOREIGN KEY (user_uuid) REFERENCES user(uuid),
+            PRIMARY KEY (emergency_id, user_uuid)
         );
         """
 
@@ -581,7 +582,7 @@ class DatabaseManager:
         for row in result:
             enc_emergencies.append(
                 enc_emergency.EncryptedEmergency(
-                    id=row[0],
+                    emergency_id=row[0],
                     user_uuid=row[1],
                     routing_info_json=row[2],
                     blob=row[3],
