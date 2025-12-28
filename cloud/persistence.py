@@ -3,7 +3,7 @@ from common.models import db, enc_emergency, user
 
 def save_user(user: user.User) -> None:
     """
-    Persists a user record to the database.
+    Persists a user to the database.
 
     This function stores the given `User` instance in the database by
     delegating the operation to the `DatabaseManager`.
@@ -17,6 +17,27 @@ def save_user(user: user.User) -> None:
     """
     dbm = db.DatabaseManager.get_instance()
     dbm.insert_user(user)
+
+
+def update_user(uuid: str, user: user.User) -> None:
+    """
+    Updates an existing user in the database.
+
+    This function updates the user identified by the given UUID using the
+    values provided by the `User` instance. The update operation is delegated
+    to the `DatabaseManager`.
+
+    Args:
+        uuid (str): The UUID of the user to update.
+        user (user.User): A User instance containing the updated values.
+
+    Raises:
+        sqlite3.Error: If an error occurs while updating the user in the
+            database.
+    """
+
+    dbm = db.DatabaseManager.get_instance()
+    dbm.update_user(uuid, user)
 
 
 def delete_user(uuid: str) -> None:
