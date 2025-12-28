@@ -3,7 +3,7 @@ from typing import List, Self
 
 import sqlite3
 from datetime import datetime
-from models import emergency, user, enc_emergency
+from common.models import emergency, user, enc_emergency
 
 
 class DatabaseManager:
