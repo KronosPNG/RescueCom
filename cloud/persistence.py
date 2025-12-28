@@ -20,9 +20,22 @@ def save_encrypted_emergency(enc_emergency: enc_emergency.EncryptedEmergency):
     dbm.insert_encrypted_emergency(enc_emergency)
 
 
-def delete_request():
+def delete_request(user_uuid: str, emergency_id: int):
     """
-    Delete a request from the DB
+    Deletes an encrypted emergency from the database.
+
+    This function removes a specific encrypted emergency associated with the
+    given user UUID and emergency ID.
+
+    Args:
+        user_uuid (str): The UUID of the user associated with the request.
+        emergency_id (int): The unique identifier of the encrypted emergency
+            request to delete.
+
+    Raises:
+        sqlite3.Error: If an error occurs while deleting the request from the
+            database.
     """
 
-    pass
+    dbm = db.DatabaseManager.get_instance()
+    dbm.delete_encrypted_emergency(user_uuid, emergency_id)
