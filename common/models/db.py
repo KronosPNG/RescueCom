@@ -733,18 +733,21 @@ class DatabaseManager:
             self.conn.rollback()
             raise e
 
-    def delete_encrypted_emergencies(self, user_uuid: str) -> None:
+    def delete_encrypted_emergency(self, user_uuid: str, emergency_id: int) -> None:
         """
-        Deletes all encrypted emergencies associated with a specific user UUID.
+        Deletes a specific encrypted emergency from the database.
 
-        This method removes all records from the `encrypted_emergency` table
-        that are associated with the given user UUID. The deletion is executed
-        within an explicit transaction: changes are committed on success and
-        rolled back if an error occurs.
+        This method removes the encrypted emergency record identified by the
+        given user UUID and emergency ID from the `encrypted_emergency` table.
+        The deletion is executed within an explicit transaction: the
+        transaction is committed on success and rolled back if an error
+        occurs.
 
         Args:
-            user_uuid (str): The UUID of the user whose encrypted emergencies
-                should be deleted.
+            user_uuid (str): The UUID of the user associated with the encrypted
+                emergency.
+            emergency_id (int): The unique identifier of the encrypted emergency
+                to delete.
 
         Raises:
             sqlite3.Error: If the deletion operation fails, the transaction is
@@ -753,13 +756,13 @@ class DatabaseManager:
 
         delete_query = """
             DELETE FROM encrypted_emergency
-            WHERE user_uuid = ?
+            WHERE user_uuid = ? AND emergency_id = ?
         """
 
         # Beging transaction
         self.conn.execute("BEGIN")
         try:
-            self.cursor.execute(delete_query, (user_uuid,))
+            self.cursor.execute(delete_query, (user_uuid, emergency_id))
             self.conn.commit()
         except self.conn.Error as e:
             self.conn.rollback()
