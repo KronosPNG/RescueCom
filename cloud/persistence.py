@@ -19,6 +19,25 @@ def save_user(user: user.User) -> None:
     dbm.insert_user(user)
 
 
+def delete_user(uuid: str) -> None:
+    """
+    Deletes a user from the database.
+
+    This function removes the user identified by the given UUID from the
+    database by delegating the operation to the `DatabaseManager`.
+
+    Args:
+        uuid (str): The UUID of the user to delete.
+
+    Raises:
+        sqlite3.Error: If an error occurs while deleting the user from the
+            database.
+    """
+
+    dbm = db.DatabaseManager.get_instance()
+    dbm.delete_user(uuid)
+
+
 def save_encrypted_emergency(enc_emergency: enc_emergency.EncryptedEmergency) -> None:
     """Persists an encrypted emergency to the database.
 
