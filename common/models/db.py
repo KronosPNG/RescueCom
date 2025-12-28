@@ -652,7 +652,7 @@ class DatabaseManager:
 
         update_query = """
             UPDATE emergency
-            position = ?, address = ?, city = ?, street_number = ?,
+            SET position = ?, address = ?, city = ?, street_number = ?,
             place_description = ?, photo_b64 = ?, resolved = ?,
             details_json = ?
             WHERE id = ? AND user_uuid = ?
