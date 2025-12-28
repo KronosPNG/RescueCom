@@ -1,5 +1,7 @@
+from cryptography.hazmat.primitives.serialization.Encoding import X962
+from cryptography.hazmat.primitives.serialization.PublicFormat import CompressedPoint
 from cryptography.x509 import (
-        random_serial_number, Certificate, CertificateBuilder, Name, NameAttribute
+        load_pem_x509_certificate, random_serial_number, Certificate, CertificateBuilder, Name, NameAttribute
 )
 from cryptography.x509.oid import NameOID
 
@@ -11,7 +13,32 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from datetime import datetime
+from pathlib import Path
 
+
+def load_certificate(path: Path) -> Certificate:
+    """
+    Load a certificate at a given path
+
+    Args:
+        path (Path): path where the certificate is located
+    Returns:
+        The certificate found at `path`
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+
+    if not isinstance(path, Path):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        with path.open() as f:
+            certificate = load_pem_x509_certificate(f.read())
+    except Exception as e:
+        raise e
+
+    return certificate
 
 def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> tuple[Ed25519PrivateKey, Certificate]:
     """
@@ -116,6 +143,41 @@ def sign(skey: Ed25519PrivateKey, data: bytes) -> bytes:
         raise TypeError("Wrong types for arguments")
 
     return skey.sign(data)
+
+def decode_ecdh_pkey(data: bytes) -> EllipticCurvePublicKey:
+    """
+    Decode an ECDH public key from encoded bytes
+
+    Args
+        data (bytes): encoded public key
+    Returns:
+        Decoded public key
+    Raises:
+        TypeError: if any argument is of the wrong type
+        ValueError: if an invalid point is supplied
+    """
+
+    if not isinstance(data, bytes):
+        raise TypeError("Wrong types for arguments")
+
+    return EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), data)
+
+def encode_ecdh_pkey(pkey: EllipticCurvePublicKey) -> bytes:
+    """
+    Encode an ECDH public key to a bytes object
+
+    Args
+        pkey (EllipticCurvePublicKey): public key to encode
+    Returns:
+        data (bytes): encoded public key
+    Raises:
+        TypeError: if any argument is of the wrong type
+    """
+
+    if not isinstance(data, EllipticCurvePublicKey):
+        raise TypeError("Wrong types for arguments")
+
+    return pkey.public_bytes(X962, CompressedPoint)
 
 def gen_ecdh_keys() -> tuple[EllipticCurvePrivateKey, EllipticCurvePublicKey]:
     """

@@ -1,5 +1,4 @@
 from flask import Flask
-from common.services.crypto import *
 
 
 app = Flask(__name__)
