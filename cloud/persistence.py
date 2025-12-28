@@ -108,7 +108,7 @@ def update_encrypted_emergency(
     dbm.update_encyrpted_emergency(user_uuid, emergency_id, enc_emergency)
 
 
-def delete_request(user_uuid: str, emergency_id: int):
+def delete_encrypted_emergency(user_uuid: str, emergency_id: int):
     """
     Deletes an encrypted emergency from the database.
 
