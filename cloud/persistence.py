@@ -19,10 +19,11 @@ def save_user(user: user.User) -> None:
     dbm.insert_user(user)
 
 
-def save_encrypted_emergency(enc_emergency: enc_emergency.EncryptedEmergency):
-    """Persists an encrypted emergency request to the database.
+def save_encrypted_emergency(enc_emergency: enc_emergency.EncryptedEmergency) -> None:
+    """Persists an encrypted emergency to the database.
 
-    This function stores the given `EncryptedEmergency` instance in the database.
+    This function stores the given `EncryptedEmergency` instance in the database by
+    delegating the operation to the `DatabaseManager`.
     The encrypted emergency is persisted until it is resolved or explicitly removed.
 
     Args:
@@ -43,7 +44,8 @@ def delete_request(user_uuid: str, emergency_id: int):
     Deletes an encrypted emergency from the database.
 
     This function removes a specific encrypted emergency associated with the
-    given user UUID and emergency ID.
+    given user UUID and emergency ID by delegating the operation to the
+    `DatabaseManager`.
 
     Args:
         user_uuid (str): The UUID of the user associated with the request.
