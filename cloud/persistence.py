@@ -79,6 +79,15 @@ def save_encrypted_emergency(enc_emergency: enc_emergency.EncryptedEmergency) ->
     dbm.insert_encrypted_emergency(enc_emergency)
 
 
+def update_encrypted_emergency(
+    user_uuid: str,
+    emergency_id: int,
+    enc_emergency: enc_emergency.EncryptedEmergency,
+) -> None:
+    # TODO: implement this
+    pass
+
+
 def delete_request(user_uuid: str, emergency_id: int):
     """
     Deletes an encrypted emergency from the database.
