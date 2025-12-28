@@ -1,5 +1,4 @@
-from flask import request, jsonify, Flask
-import app.models
+from flask import request, jsonify, Flask, app
 
 @app.route('/request/forward', methods=['POST'])
 def request_forward():
