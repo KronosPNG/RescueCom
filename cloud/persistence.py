@@ -1,4 +1,22 @@
-from common.models import db, enc_emergency
+from common.models import db, enc_emergency, user
+
+
+def save_user(user: user.User) -> None:
+    """
+    Persists a user record to the database.
+
+    This function stores the given `User` instance in the database by
+    delegating the operation to the `DatabaseManager`.
+
+    Args:
+        user (user.User): The User instance to be persisted in the database.
+
+    Raises:
+        sqlite3.Error: If an error occurs while inserting the user into the
+            database.
+    """
+    dbm = db.DatabaseManager.get_instance()
+    dbm.insert_user(user)
 
 
 def save_encrypted_emergency(enc_emergency: enc_emergency.EncryptedEmergency):
