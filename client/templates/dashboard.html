@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RescueCom Dashboard</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="brand">
+                <div class="brand-icon"></div>
+                RescueCom Command
+            </div>
+
+            <div class="header-status">
+                <div class="status-item">
+                    <div class="live-indicator"></div>
+                    System Online
+                </div>
+                <div class="status-item">
+                    <span class="status-value" id="activeUnitsCount">12</span> Unità Attive
+                </div>
+                <div class="status-item">
+                    <span class="status-value" id="activeRequestsCount">0</span> Richieste Pendenti
+                </div>
+                <a href="/"
+                    style="color: white; text-decoration: none; font-size: 0.9rem; margin-left: 20px; border: 1px solid #334155; padding: 5px 10px; border-radius: 5px;">Esci</a>
+            </div>
+        </header>
+
+        <!-- Sidebar: Feed -->
+        <aside class="request-feed">
+            <div class="feed-header">
+                <span>Feed Emergenze</span>
+                <i class="bi bi-filter-right" style="cursor: pointer;"></i>
+            </div>
+            <div class="feed-list" id="feedList">
+                <!-- Cards injected via JS -->
+            </div>
+        </aside>
+
+        <!-- Main: Map -->
+        <main class="map-view" id="mapContainer">
+            <div class="map-placeholder-text">
+                <i class="bi bi-geo-alt"></i> Mappa Tattica (Simulazione)
+            </div>
+            <!-- Markers injected via JS -->
+        </main>
+
+        <!-- Right Panel: Details -->
+        <aside class="detail-panel" id="detailPanel">
+            <div
+                style="display: flex; height: 100%; align-items: center; justify-content: center; color: var(--text-secondary); text-align: center;">
+                <div>
+                    <i class="bi bi-cursor" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                    Seleziona una richiesta<br>per visualizzare i dettagli
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+    <!-- Google Maps API (Development Mode - No Key needed for localhost demo, but add key for production) -->
+    <!-- Replace YOUR_API_KEY with an actual key if you have one -->
+    <script async src="https://maps.googleapis.com/maps/api/js?callback=initMap">
+    </script>
+
+</html>
