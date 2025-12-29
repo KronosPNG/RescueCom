@@ -1,16 +1,4 @@
 class Emergency:
-    id: int
-    user_uuid: str
-    position: tuple[float, float]
-    address: str
-    city: str
-    street_number: int
-    place_description: str
-    photo_b64: str
-    resolved: bool
-    # TODO: could be a new table
-    details_json: str
-
     def __init__(
         self,
         id: int,

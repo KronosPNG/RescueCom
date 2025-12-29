@@ -1,9 +1,4 @@
 class EncryptedEmergency:
-    emergency_id: int
-    user_uuid: str
-    routing_info_json: str
-    blob: bytes
-
     def __init__(
         self, emergency_id: int, user_uuid: str, routing_info_json: str, blob: bytes
     ) -> None:
