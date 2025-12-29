@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="it">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Benvenuto in RescueCom</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap-icons.min.css') }}" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/welcome.css') }}" rel="stylesheet">
+</head>
+
+<body>
+
+    <header class="welcome-header">
+        <h1>Benvenuto in RescueCom</h1>
+        <p>Connessione Vitale, Ovunque.</p>
+    </header>
+
+    <main class="welcome-card">
+        <h2>Prima di iniziare...</h2>
+
+        <p class="info-text">
+            La tua privacy e la sicurezza dei tuoi dati sono la nostra priorità assoluta.
+            RescueCom è progettato secondo i principi di <strong>Privacy by Design</strong>.
+        </p>
+
+        <div class="feature-list">
+            <!-- Feature 1: Local Storage -->
+            <div class="feature-item">
+                <div class="feature-icon icon-server">
+                    <i class="bi bi-hdd-network"></i>
+                </div>
+                <div class="feature-content">
+                    <h3>Archiviazione Locale</h3>
+                    <p>I tuoi dati risiedono sul tuo dispositivo, cifrati. Nessun dato lascia il telefono senza il tuo
+                        consenso esplicito.</p>
+                </div>
+            </div>
+
+            <!-- Feature 2: Health Data -->
+            <div class="feature-item">
+                <div class="feature-icon icon-heart">
+                    <i class="bi bi-heart-pulse"></i>
+                </div>
+                <div class="feature-content">
+                    <h3>Dati Sanitari</h3>
+                    <p>Raccogliamo dati sanitari critici (gruppo sanguigno, allergie) solo per facilitare il soccorso
+                        medico d'urgenza.</p>
+                </div>
+            </div>
+
+            <!-- Feature 3: Geolocation -->
+            <div class="feature-item">
+                <div class="feature-icon icon-location">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <div class="feature-content">
+                    <h3>Geolocalizzazione</h3>
+                    <p>La tua posizione viene condivisa solo in caso di richiesta attiva di soccorso.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="/" id="btn-continue" class="btn-primary">
+                Continua e Accetta <i class="bi bi-arrow-right"></i>
+            </a>
+            <a href="/legal-info" id="btn-info" class="btn-outline">
+                Approfondisci Informativa
+            </a>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <!-- Welcome Logic -->
+    <script src="{{ url_for('static', filename='js/welcome.js') }}"></script>
+</body>
+
+</html>
