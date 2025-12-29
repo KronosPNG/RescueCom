@@ -1,6 +1,6 @@
-from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
 from common.models import *
 from common.services.crypto import *
+from clientDTO import ClientDTO
 import os, requests, uuid, app, struct, base64
 
 # TODO: do better
@@ -20,14 +20,15 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
     def pack_str(s: str):
         return struct.pack(f"<I@{}s".format(len(s)), len(s), s.encode())
 
-    for rescuer in app.RESCUERS:
-        ip, enc_cipher, dec_cipher, nonce = rescuer
+    for rescuer in app.RESCUERS.values():
+        if rescuer.busy:
+            continue
 
         encrypted_emergency = enc_emergency.EncryptedEmergency(
                 emergency.id,
                 emergency.user_uuid,
                 "", # unnecessary in this case
-                encrypt(enc_cipher, nonce,
+                encrypt(rescuer.enc_cipher, rescuer.nonce,
 
                         pack_str(emergency.position) +
                         pack_str(emergency.address) +
@@ -38,18 +39,17 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
                         struct.pack("?", emergency.resolved) +
                         pack_str(emergency.details_json),
 
-                        b""
+                        b"" # not needed
                     )
                 )
 
-        requests.post(ip + "/ask/vittorio", json={"encrypted_emergency": base64.b64encode(str(encrypted_emergency.to_db_tuple()))})
+        resp = requests.post(rescuer.ip + "/ask/vittorio", json={"encrypted_emergency": base64.b64encode(str(encrypted_emergency.to_db_tuple()))})
+        if not resp.ok:
+            continue
 
-def assign_emergency_to_rescuer():
-    """
-    If more than one Rescuer accepts an emergency, choose one to assign it to
-    """
-
-    pass
+        if resp.json()["accepted"]:
+            rescuer.busy = True
+            break
 
 def sync_new_request():
     """

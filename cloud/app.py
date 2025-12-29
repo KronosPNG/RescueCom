@@ -1,11 +1,11 @@
+from clientDTO import ClientDTO
 from flask import Flask
 
 
 app = Flask(__name__)
 
-# format UUID: (ip, enc_cipher, dec_cipher, nonce)
+# format UUID: ClientDTO
 CLIENTS = {}
-
 # subset of CLIENTS
 RESCUERS = {}
 
