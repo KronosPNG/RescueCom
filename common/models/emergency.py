@@ -1,4 +1,5 @@
-import datetime
+from typing import Self
+import datetime, struct
 
 
 class Emergency:
@@ -70,3 +71,78 @@ class Emergency:
             self.details_json,
             self.created_at,
         )
+
+    def pack(self) -> bytes:
+        """
+        Pack an Emergency using the struct module (not all fields)
+        """
+
+        def pack_str(s: str):
+            return struct.pack(f"<I{}s".format(len(s)), len(s), s.encode())
+
+        return pack_str(self.position) +
+            pack_str(self.address) +
+            pack_str(self.city) +
+            struct.pack("<I", self.street_number) +
+            pack_str(self.place_description) +
+            pack_str(self.photo_b64) +
+            struct.pack("<I", self.severity) +
+            struct.pack("?", self.resolved) +
+            pack_str(self.details_json) +
+            pack_str(str(self.created_at))
+
+    @classmethod
+    def unpack(cls: type[Self], emergency_id: int, user_uuid: str, data: bytes) -> Self:
+        """
+        Unpack a bytes object to an instance of Emergency
+
+        Args:
+            emergency_id (int): emergency id
+            user_uuid (str): uuid of the user who's owner of the Emergency
+            data (bytes): bytes blob (usually result of decryption)
+
+        Returns:
+            The instantiated Emergency
+
+        Raises:
+            TypeError: if any argument is of the wrong type
+            ValueError: if instantiation fails
+        """
+
+        def unpack_str(blob: bytes):
+            length = struct.unpack("<I", blob[:4])[0]
+            unpacked = struct.unpack("{}s".format(length), blob[4:])
+            return blob[4+length:], unpacked[0].decode()
+
+        if not isinstance(emergency_id, int) or not isinstance(user_uuid, str) or not isinstance(data, bytes):
+            raise TypeError("Wrong types for arguments")
+
+        try:
+            blob, position_str = unpack_str(blob)
+            blob, address = unpack_str(blob)
+            blob, city = unpack_str(blob)
+            blob, street_number = blob[4:], struct.unpack("<I", blob)[0]
+            blob, place_description = unpack_str(blob)
+            blob, photo_b64 = unpack_str(blob)
+            blob, severity = blob[4:], struct.unpack("<I", blob)[0]
+            blob, resolved = blob[1:], struct.unpack("?", blob)[0]
+            blob, details_json = unpack_str(blob)
+            blob, created_at_str = unpack_str(blob)
+
+            position = tuple(map(float, position_str.split(',')))
+            created_at = datetime.fromisoformat(created_at_str)
+
+            return Emergency(emergency_id,
+                             user_uuid,
+                             address,
+                             city,
+                             street_number,
+                             severity,
+                             created_at,
+                             resolved,
+                             position,
+                             place_description,
+                             photo_b64,
+                             details_json)
+        except Exception as e:
+            raise ValueError("Something went wrong:" + str(e))

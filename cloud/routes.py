@@ -1,5 +1,6 @@
 from flask import request, jsonify
-from common.models import enc_emergency, user
+from common.models import enc_emergency, user, db
+from common.services.crypto import decrypt
 from cloud import persistence
 from cloud.app import app
 
@@ -38,11 +39,20 @@ def extract_emergency_fields(data: dict) -> tuple:
 def emergency_submit() -> tuple:
     """Submit an emergency"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
-        # TODO: get parameters from the request and forward the corresponding emergency
-        # if rescuee_id and rescuer_id are not None, forward the emergency to the rescuer
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
+
+        encrypted_emergency, error_response = extract_emergency_fields(data)
+        if error_response:
+            return error_response
+
+        client = app.CLIENTS[encrypted_emergency.get('user_uuid')]
+        decrypted_blob = decrypt(client.dec_cipher, client.nonce, blob, b"") # TODO: align with client about aad
+        emergency = Emergency.unpack(encrypted_emergency.emergency_id,
+                                     encrypted_emergency.user_uuid,
+                                     decrypted_blob)
+
         return jsonify({'message': 'Emergency submitted successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
