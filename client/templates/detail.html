@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dettaglio Emergenza - RescueCom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-red: #ef4444;
+            --accent-green: #22c55e;
+            --accent-orange: #f97316;
+            --border-color: #334155;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .section-title {
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+
+        .value {
+            font-size: 1.1rem;
+        }
+
+        #mapDetail {
+            height: 300px;
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+            z-index: 1;
+            /* Ensure map is below overlay if any */
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--border-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <div class="title" id="reqType">Caricamento...</div>
+                <div class="subtitle" id="reqIdTime">...</div>
+            </div>
+            <div id="priorityBadge"></div>
+        </div>
+
+        <div class="grid">
+            <div>
+                <div class="section-title">Indirizzo</div>
+                <div class="value" id="reqAddress">-</div>
+                <div class="subtitle" id="reqDesc">-</div>
+            </div>
+            <div>
+                <div class="section-title">Stato Paziente</div>
+                <div class="value" id="reqUserAndConditions">-</div>
+            </div>
+        </div>
+
+        <div class="section-title">Mappa Tattica</div>
+        <div id="mapDetail"></div>
+
+        <div class="section-title">Note Aggiuntive</div>
+        <div class="value" style="font-size: 0.95rem; color: var(--text-secondary);">
+            Dati ricevuti dal backend. Verificare sempre la posizione all'arrivo.
+        </div>
+
+        <div id="photoContainer" style="margin-top: 20px;"></div>
+
+        <div class="action-bar" style="display: flex; gap: 10px; margin-top: 30px;">
+            <button id="btnContact" class="btn" style="flex: 1; margin-top: 0;">Contatta</button>
+            <a href="#" class="btn"
+                style="flex: 1; margin-top: 0; text-align: center; background-color: var(--border-color);"
+                onclick="window.print(); return false;">Stampa Scheda</a>
+        </div>
+
+        <div style="margin-top: 10px;">
+            <button id="btnDispatch" class="btn"
+                style="width: 100%; margin-top: 0; background-color: var(--accent-green);">Invia Soccorsi</button>
+        </div>
+
+        <a href="/dashboard" class="btn" style="margin-top: 20px; text-align: center; display: block;">Torna alla
+            Dashboard</a>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Simple script to parse URL params and display mock data for demo
+        // In a real app, this would fetch from an API endpoint /api/emergency/<id>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mock Display Logic based on URL ID or LocalStorage/Mock
+            // Since we don't have a real backend serving this specific ID yet, we'll simulate.
+
+            const pathParts = window.location.pathname.split('/');
+            const reqId = pathParts[pathParts.length - 1]; // e.g. "REQ-1024"
+
+            // Fetch from LocalStorage
+            const storedRequests = JSON.parse(localStorage.getItem('rescuecom_requests') || '[]');
+            const req = storedRequests.find(r => r.id === reqId);
+
+            const map = L.map('mapDetail');
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            if (req) {
+                // Populate Data
+                document.getElementById('reqType').textContent = req.type;
+                document.getElementById('reqIdTime').textContent = `${req.id} • ${req.time}`;
+                const priorityColor = req.priority === 'high' ? 'red' : req.priority === 'medium' ? 'orange' : 'green';
+
+                document.getElementById('priorityBadge').innerHTML =
+                    `<span style="background-color: ${priorityColor}; color: white; padding: 5px 10px; border-radius: 6px; font-weight: bold; text-transform: uppercase;">${req.priority} Priority</span>`;
+
+                document.getElementById('reqAddress').textContent = req.address || 'N/A';
+                document.getElementById('reqDesc').textContent = req.desc || 'Nessuna descrizione';
+
+                const userText = `${req.user.name} (${req.user.age} anni) - ${req.user.blood}`;
+                const conditions = req.user.conditions && req.user.conditions.length > 0 ? req.user.conditions.join(', ') : 'Nessuna';
+                document.getElementById('reqUserAndConditions').innerHTML = `<strong>${userText}</strong><br><span style="color: grey; font-size: 0.9rem">${conditions}</span>`;
+
+                // Map View
+                map.setView([req.location.lat, req.location.lng], 16);
+                L.circleMarker([req.location.lat, req.location.lng], {
+                    color: priorityColor,
+                    fillColor: priorityColor,
+                    fillOpacity: 0.7,
+                    radius: 12
+                }).addTo(map);
+
+                // Photo
+                if (req.photo) {
+                    document.getElementById('photoContainer').innerHTML =
+                        `<div class="section-title">FOTO ALLEGATA</div>
+                         <img src="${req.photo}" style="width: 100%; border-radius: 8px; border: 1px solid #334155;">`;
+                }
+
+                // Action Buttons Logic
+                const btnContact = document.getElementById('btnContact');
+                if (btnContact) {
+                    btnContact.onclick = () => {
+                        console.log(`[Action] Contacting user: ${req.user.name} (REQ: ${req.id})`);
+                        alert(`📞 Call initiated to ${req.user.name}\nRequest ID: ${req.id}`);
+                    };
+                }
+
+                const btnDispatch = document.getElementById('btnDispatch');
+                if (btnDispatch) {
+                    btnDispatch.addEventListener('click', () => {
+                        console.log(`[Action] Dispatching units to: ${req.address} (REQ: ${req.id})`);
+                        alert(`🚑 Rescue Team Dispatched!\nLocation: ${req.address || 'N/A'}\nPriority: ${req.priority.toUpperCase()}`);
+                    });
+                }
+
+            } else {
+                document.getElementById('reqType').textContent = 'Richiesta Non Trovata';
+                document.getElementById('reqIdTime').textContent = reqId;
+                map.setView([41.9028, 12.4964], 5); // Default Italy
+            }
+        });
+    </script>
+</body>
+
+</html>

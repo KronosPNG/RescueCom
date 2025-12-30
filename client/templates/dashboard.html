@@ -41,7 +41,7 @@
         <!-- Sidebar: Feed -->
         <aside class="request-feed">
             <div class="feed-header">
-                <span>Feed Emergenze</span>
+                <span id="feedTitle">Ordine temporale</span>
                 <i class="bi bi-filter-right" style="cursor: pointer;"></i>
             </div>
             <div class="feed-list" id="feedList">
@@ -70,11 +70,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 
-    <!-- Google Maps API (Development Mode - No Key needed for localhost demo, but add key for production) -->
-    <!-- Replace YOUR_API_KEY with an actual key if you have one -->
-    <script async src="https://maps.googleapis.com/maps/api/js?callback=initMap">
-    </script>
+    <!-- Leaflet (OpenStreetMap) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 </html>
