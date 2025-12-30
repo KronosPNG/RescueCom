@@ -4,6 +4,36 @@ from cloud import persistence
 from cloud.app import app
 
 
+def get_validated_json() -> tuple:
+    """Extract and validate JSON data from request"""
+    data = request.get_json()
+    if not data:
+        return None, (jsonify({'error': 'No JSON data provided'}), 400)
+    return data, None
+
+
+def extract_emergency_fields(data: dict) -> tuple:
+    """Extract and validate emergency fields from request data"""
+    emergency_id = data.get('emergency_id')
+    user_uuid = data.get('user_uuid')
+    routing_info_json = data.get('routing_info_json')
+    blob = data.get('blob')
+
+    # Validate required fields
+    if not emergency_id or not user_uuid:
+        return None, (jsonify({'error': 'Missing required fields: emergency_id and user_uuid'}), 400)
+
+    # Create EncryptedEmergency instance
+    encrypted_emergency = enc_emergency.EncryptedEmergency(
+        emergency_id=emergency_id,
+        user_uuid=user_uuid,
+        routing_info_json=routing_info_json,
+        blob=blob
+    )
+
+    return encrypted_emergency, None
+
+
 @app.route('/emergency/forward', methods=['POST'])
 def emergency_forward() -> tuple:
     """Forward an emergency"""
@@ -22,27 +52,13 @@ def emergency_forward() -> tuple:
 def emergency_accept() -> tuple:
     """Accept an emergency"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
 
-        # Extract fields from request data
-        emergency_id = data.get('emergency_id')
-        user_uuid = data.get('user_uuid')
-        routing_info_json = data.get('routing_info_json')
-        blob = data.get('blob')
-
-        # Validate required fields
-        if not emergency_id or not user_uuid:
-            return jsonify({'error': 'Missing required fields: emergency_id and user_uuid'}), 400
-
-        # Create EncryptedEmergency instance and save to database
-        encrypted_emergency = enc_emergency.EncryptedEmergency(
-            emergency_id=emergency_id,
-            user_uuid=user_uuid,
-            routing_info_json=routing_info_json,
-            blob=blob
-        )
+        encrypted_emergency, error_response = extract_emergency_fields(data)
+        if error_response:
+            return error_response
 
         persistence.save_encrypted_emergency(encrypted_emergency)
 
@@ -55,29 +71,16 @@ def emergency_accept() -> tuple:
 def emergency_update() -> tuple:
     """Update an emergency"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
 
-        # Extract fields from request data
-        emergency_id = data.get('emergency_id')
-        user_uuid = data.get('user_uuid')
-        routing_info_json = data.get('routing_info_json')
-        blob = data.get('blob')
+        encrypted_emergency, error_response = extract_emergency_fields(data)
+        if error_response:
+            return error_response
 
-        # Validate required fields
-        if not emergency_id or not user_uuid:
-            return jsonify({'error': 'Missing required fields: emergency_id and user_uuid'}), 400
-
-        # Create EncryptedEmergency instance and update in database
-        encrypted_emergency = enc_emergency.EncryptedEmergency(
-            emergency_id=emergency_id,
-            user_uuid=user_uuid,
-            routing_info_json=routing_info_json,
-            blob=blob
-        )
-
-        persistence.update_encrypted_emergency(user_uuid, emergency_id, encrypted_emergency)
+        persistence.update_encrypted_emergency(encrypted_emergency.user_uuid, encrypted_emergency.emergency_id,
+                                               encrypted_emergency)
 
         return jsonify({'message': 'Emergency updated successfully', 'data': data}), 200
     except Exception as e:
@@ -88,9 +91,9 @@ def emergency_update() -> tuple:
 def emergency_delete() -> tuple:
     """Delete an emergency"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
 
         # Extract fields from request data
         user_uuid = data.get('user_uuid')
@@ -112,9 +115,9 @@ def emergency_delete() -> tuple:
 def certificate_verify() -> tuple:
     """Verify a certificate with nonce and signature"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
 
         # Extract fields from request data
         certificate = data.get('certificate')
@@ -138,9 +141,9 @@ def certificate_verify() -> tuple:
 @app.route('/publickey/register', methods=['POST'])
 def publickey_register() -> tuple:
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
 
         # Extract fields from request data
         public_key = data.get('public_key')
@@ -160,9 +163,9 @@ def publickey_register() -> tuple:
 def user_save() -> tuple:
     """Save a user"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
 
         # Validate required fields
         required_fields = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
@@ -192,9 +195,9 @@ def user_save() -> tuple:
 def user_update() -> tuple:
     """Update a user"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
 
         uuid = data.get('uuid')
 
@@ -226,9 +229,9 @@ def user_update() -> tuple:
 def user_delete() -> tuple:
     """Delete a user"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
 
         uuid = data.get('uuid')
 
