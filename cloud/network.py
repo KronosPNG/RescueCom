@@ -36,6 +36,7 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
                         struct.pack("<I", emergency.street_number) +
                         pack_str(emergency.place_description) +
                         pack_str(emergency.photo_b64) +
+                        struct.pack("<I", emergency.severity) +
                         struct.pack("?", emergency.resolved) +
                         pack_str(emergency.details_json),
 
