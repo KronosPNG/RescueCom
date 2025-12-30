@@ -75,7 +75,7 @@ class DatabaseManager:
         );
 
         CREATE TABLE IF NOT EXISTS emergency (
-            id INTEGER PRIMARY KEY,
+            emergency_id INTEGER PRIMARY KEY,
             user_uuid TEXT NOT NULL,
             position TEXT DEFAULT '0,0',
             address TEXT NOT NULL,
@@ -419,7 +419,7 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, position, address, city, street_number,
+            SELECT emergency_id, user_uuid, position, address, city, street_number,
             place_description, photo_b64, severity, resolved, details_json
             FROM emergency
         """
@@ -432,7 +432,7 @@ class DatabaseManager:
         for row in result:
             emergencies.append(
                 emergency.Emergency(
-                    id=row[0],
+                    emergency_id=row[0],
                     user_uuid=row[1],
                     position=tuple(row[2].split(",")),
                     address=row[3],
@@ -475,7 +475,7 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, position, address, city, street_number,
+            SELECT emergency_id, user_uuid, position, address, city, street_number,
             place_description, photo_b64, severity, resolved, details_json
             FROM emergency
             WHERE user_uuid = ? AND id = ?
@@ -488,7 +488,7 @@ class DatabaseManager:
             return None
 
         return emergency.Emergency(
-            id=result[0],
+            emergency_id=result[0],
             user_uuid=result[1],
             position=tuple(result[2].split(",")),
             address=result[3],
@@ -526,7 +526,7 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, position, address, city, street_number,
+            SELECT emergency_id, user_uuid, position, address, city, street_number,
             place_description, photo_b64, severity, resolved, details_json
             FROM emergency
             WHERE user_uuid = ?
@@ -540,7 +540,7 @@ class DatabaseManager:
         for row in result:
             emergencies.append(
                 emergency.Emergency(
-                    id=row[0],
+                    emergency_id=row[0],
                     user_uuid=row[1],
                     position=tuple(row[2].split(",")),
                     address=row[3],
@@ -574,7 +574,7 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, severity, routing_info_json, blob
+            SELECT emergency_id, user_uuid, severity, routing_info_json, blob
             FROM encrypted_emergency
         """
 
@@ -660,7 +660,7 @@ class DatabaseManager:
             SET position = ?, address = ?, city = ?, street_number = ?,
             place_description = ?, photo_b64 = ?, severity = ?, resolved = ?,
             details_json = ?
-            WHERE id = ? AND user_uuid = ?
+            WHERE emergency_id = ? AND user_uuid = ?
         """
 
         # Beging transaction
@@ -773,7 +773,7 @@ class DatabaseManager:
 
         delete_query = """
             DELETE FROM emergency
-            WHERE id = ? AND user_uuid = ?
+            WHERE emergency_id = ? AND user_uuid = ?
         """
 
         # Beging transaction

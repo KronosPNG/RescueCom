@@ -1,7 +1,7 @@
 class Emergency:
     def __init__(
         self,
-        id: int,
+        emergency_id: int,
         user_uuid: str,
         address: str,
         city: str,
@@ -13,7 +13,7 @@ class Emergency:
         photo_b64: str = "",
         details_json: str = "",
     ) -> None:
-        self.id = id
+        self.emergency_id = emergency_id
         self.user_uuid = user_uuid
         self.position = position
         self.address = address
@@ -35,7 +35,7 @@ class Emergency:
 
         Returns:
             tuple: A tuple containing the following values, in order:
-                - id (int): Unique identifier of the emergency.
+                - emergency_id (int): Unique identifier of the emergency.
                 - user_uuid (str): UUID of the user who created the emergency.
                 - position (str): Serialized position as "x,y".
                 - address (str): Street address of the emergency.
@@ -49,7 +49,7 @@ class Emergency:
         """
 
         return (
-            self.id,
+            self.emergency_id,
             self.user_uuid,
             # NOTE: Saved in the db as: "x,y"
             f"{self.position[0]},{self.position[1]}",
