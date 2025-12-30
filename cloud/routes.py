@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from common.models import enc_emergency
+from common.models import enc_emergency, user
 from cloud import persistence
 from cloud.app import app
 
@@ -102,3 +102,49 @@ def publickey_register() -> tuple:
     # TODO: Implement logic to save or update user with public key
 
     return jsonify({'message': 'Public key registered successfully', 'data': data}), 200
+
+@app.route('/user/save', methods=['POST'])
+def user_save() -> tuple:
+    """Save a user"""
+    data = request.get_json()
+
+    new_user = user.User(
+        uuid=data.get('uuid'),
+        is_rescuer=data.get('is_rescuer'),
+        name=data.get('name'),
+        surname=data.get('surname'),
+        birthday=data.get('birthday'),
+        blood_type=data.get('blood_type'),
+        health_info_json=data.get('health_info_json')
+    )
+
+    persistence.save_user(new_user)
+    return jsonify({'message': 'User saved successfully', 'data': data}), 200
+
+@app.route('/user/update', methods=['POST'])
+def user_update() -> tuple:
+    """Update a user"""
+    data = request.get_json()
+    uuid = data.get('uuid')
+
+    updated_user = user.User(
+        uuid=uuid,
+        is_rescuer=data.get('is_rescuer'),
+        name=data.get('name'),
+        surname=data.get('surname'),
+        birthday=data.get('birthday'),
+        blood_type=data.get('blood_type'),
+        health_info_json=data.get('health_info_json')
+    )
+
+    persistence.update_user(uuid, updated_user)
+    return jsonify({'message': 'User updated successfully', 'data': data}), 200
+
+@app.route('/user/delete', methods=['POST'])
+def user_delete() -> tuple:
+    """Delete a user"""
+    data = request.get_json()
+    uuid = data.get('uuid')
+
+    persistence.delete_user(uuid)
+    return jsonify({'message': 'User deleted successfully', 'uuid': uuid}), 200
