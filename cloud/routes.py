@@ -34,16 +34,16 @@ def extract_emergency_fields(data: dict) -> tuple:
     return encrypted_emergency, None
 
 
-@app.route('/emergency/forward', methods=['POST'])
-def emergency_forward() -> tuple:
-    """Forward an emergency"""
+@app.route('/emergency/submit', methods=['POST'])
+def emergency_submit() -> tuple:
+    """Submit an emergency"""
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
         # TODO: get parameters from the request and forward the corresponding emergency
         # if rescuee_id and rescuer_id are not None, forward the emergency to the rescuer
-        return jsonify({'message': 'Emergency forwarded successfully', 'data': data}), 200
+        return jsonify({'message': 'Emergency submitted successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
