@@ -7,144 +7,236 @@ from cloud.app import app
 @app.route('/request/forward', methods=['POST'])
 def request_forward() -> tuple:
     """Forward a request"""
-    data = request.get_json()
-    # TODO: get parameters from the request and forward the corresponding request
-    # if rescuee_id and rescuer_id are not None, forward the request to the rescuer
-    return jsonify({'message': 'Request forwarded successfully', 'data': data}), 200
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        # TODO: get parameters from the request and forward the corresponding request
+        # if rescuee_id and rescuer_id are not None, forward the request to the rescuer
+        return jsonify({'message': 'Request forwarded successfully', 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 
 @app.route('/request/accept', methods=['POST'])
 def request_accept() -> tuple:
     """Accept a request"""
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-    # Extract fields from request data
-    emergency_id = data.get('emergency_id')
-    user_uuid = data.get('user_uuid')
-    routing_info_json = data.get('routing_info_json')
-    blob = data.get('blob')
+        # Extract fields from request data
+        emergency_id = data.get('emergency_id')
+        user_uuid = data.get('user_uuid')
+        routing_info_json = data.get('routing_info_json')
+        blob = data.get('blob')
 
-    # Create EncryptedEmergency instance and save to database
-    encrypted_emergency = enc_emergency.EncryptedEmergency(
-        emergency_id=emergency_id,
-        user_uuid=user_uuid,
-        routing_info_json=routing_info_json,
-        blob=blob
-    )
+        # Validate required fields
+        if not emergency_id or not user_uuid:
+            return jsonify({'error': 'Missing required fields: emergency_id and user_uuid'}), 400
 
-    persistence.save_encrypted_emergency(encrypted_emergency)
+        # Create EncryptedEmergency instance and save to database
+        encrypted_emergency = enc_emergency.EncryptedEmergency(
+            emergency_id=emergency_id,
+            user_uuid=user_uuid,
+            routing_info_json=routing_info_json,
+            blob=blob
+        )
 
-    return jsonify({'message': 'Request accepted successfully', 'data': data}), 200
+        persistence.save_encrypted_emergency(encrypted_emergency)
+
+        return jsonify({'message': 'Request accepted successfully', 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
 @app.route('/request/update', methods=['POST'])
 def request_update() -> tuple:
     """Update a request"""
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-    # Extract fields from request data
-    emergency_id = data.get('emergency_id')
-    user_uuid = data.get('user_uuid')
-    routing_info_json = data.get('routing_info_json')
-    blob = data.get('blob')
+        # Extract fields from request data
+        emergency_id = data.get('emergency_id')
+        user_uuid = data.get('user_uuid')
+        routing_info_json = data.get('routing_info_json')
+        blob = data.get('blob')
 
-    # Create EncryptedEmergency instance and update in database
-    encrypted_emergency = enc_emergency.EncryptedEmergency(
-        emergency_id=emergency_id,
-        user_uuid=user_uuid,
-        routing_info_json=routing_info_json,
-        blob=blob
-    )
+        # Validate required fields
+        if not emergency_id or not user_uuid:
+            return jsonify({'error': 'Missing required fields: emergency_id and user_uuid'}), 400
 
-    persistence.update_encrypted_emergency(user_uuid, emergency_id, encrypted_emergency)
+        # Create EncryptedEmergency instance and update in database
+        encrypted_emergency = enc_emergency.EncryptedEmergency(
+            emergency_id=emergency_id,
+            user_uuid=user_uuid,
+            routing_info_json=routing_info_json,
+            blob=blob
+        )
 
-    return jsonify({'message': 'Request updated successfully', 'data': data}), 200
+        persistence.update_encrypted_emergency(user_uuid, emergency_id, encrypted_emergency)
+
+        return jsonify({'message': 'Request updated successfully', 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
 @app.route('/request/delete', methods=['POST'])
 def request_delete() -> tuple:
     """Delete a request"""
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-    # Extract fields from request data
-    user_uuid = data.get('user_uuid')
-    emergency_id = data.get('emergency_id')
+        # Extract fields from request data
+        user_uuid = data.get('user_uuid')
+        emergency_id = data.get('emergency_id')
 
-    # Delete the request from the database
-    persistence.delete_request(user_uuid, emergency_id)
+        # Validate required fields
+        if not user_uuid or not emergency_id:
+            return jsonify({'error': 'Missing required fields: user_uuid and emergency_id'}), 400
 
-    return jsonify({'message': 'Request deleted successfully', 'data': data}), 200
+        # Delete the request from the database
+        persistence.delete_request(user_uuid, emergency_id)
+
+        return jsonify({'message': 'Request deleted successfully', 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
 @app.route('/certificate/verify', methods=['POST'])
 def certificate_verify() -> tuple:
     """Verify a certificate with nonce and signature"""
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-    # Extract fields from request data
-    certificate = data.get('certificate')
-    nonce = data.get('nonce')
-    signature = data.get('signature')
+        # Extract fields from request data
+        certificate = data.get('certificate')
+        nonce = data.get('nonce')
+        signature = data.get('signature')
 
-    # TODO: Implement certificate verification logic
-    # Verify the certificate against trusted CA
-    # Verify the signature using the certificate's public key and nonce
+        # Validate required fields
+        if not certificate or not nonce or not signature:
+            return jsonify({'error': 'Missing required fields: certificate, nonce, and signature'}), 400
 
-    # For now, return a placeholder response with public key
-    return jsonify({'message': 'Certificate verified successfully', 'pkey': 'placeholder_public_key'}), 200
+        # TODO: Implement certificate verification logic
+        # Verify the certificate against trusted CA
+        # Verify the signature using the certificate's public key and nonce
+
+        # For now, return a placeholder response with public key
+        return jsonify({'message': 'Certificate verified successfully', 'pkey': 'placeholder_public_key'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 
 @app.route('/publickey/register', methods=['POST'])
 def publickey_register() -> tuple:
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-    # Extract fields from request data
-    public_key = data.get('public_key')
+        # Extract fields from request data
+        public_key = data.get('public_key')
 
-    # TODO: Implement logic to save or update user with public key
+        # Validate required fields
+        if not public_key:
+            return jsonify({'error': 'Missing required field: public_key'}), 400
 
-    return jsonify({'message': 'Public key registered successfully', 'data': data}), 200
+        # TODO: Implement logic to save or update user with public key
+
+        return jsonify({'message': 'Public key registered successfully', 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 
 @app.route('/user/save', methods=['POST'])
 def user_save() -> tuple:
     """Save a user"""
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-    new_user = user.User(
-        uuid=data.get('uuid'),
-        is_rescuer=data.get('is_rescuer'),
-        name=data.get('name'),
-        surname=data.get('surname'),
-        birthday=data.get('birthday'),
-        blood_type=data.get('blood_type'),
-        health_info_json=data.get('health_info_json')
-    )
+        # Validate required fields
+        required_fields = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
+        missing_fields = [field for field in required_fields if field not in data or data.get(field) is None]
+        if missing_fields:
+            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
-    persistence.save_user(new_user)
-    return jsonify({'message': 'User saved successfully', 'data': data}), 200
+        new_user = user.User(
+            uuid=data.get('uuid'),
+            is_rescuer=data.get('is_rescuer'),
+            name=data.get('name'),
+            surname=data.get('surname'),
+            birthday=data.get('birthday'),
+            blood_type=data.get('blood_type'),
+            health_info_json=data.get('health_info_json')
+        )
+
+        persistence.save_user(new_user)
+        return jsonify({'message': 'User saved successfully', 'data': data}), 200
+    except (ValueError, TypeError) as e:
+        return jsonify({'error': f'Invalid data format: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 
 @app.route('/user/update', methods=['POST'])
 def user_update() -> tuple:
     """Update a user"""
-    data = request.get_json()
-    uuid = data.get('uuid')
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-    updated_user = user.User(
-        uuid=uuid,
-        is_rescuer=data.get('is_rescuer'),
-        name=data.get('name'),
-        surname=data.get('surname'),
-        birthday=data.get('birthday'),
-        blood_type=data.get('blood_type'),
-        health_info_json=data.get('health_info_json')
-    )
+        uuid = data.get('uuid')
 
-    persistence.update_user(uuid, updated_user)
-    return jsonify({'message': 'User updated successfully', 'data': data}), 200
+        # Validate required fields
+        required_fields = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
+        missing_fields = [field for field in required_fields if field not in data or data.get(field) is None]
+        if missing_fields:
+            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+
+        updated_user = user.User(
+            uuid=uuid,
+            is_rescuer=data.get('is_rescuer'),
+            name=data.get('name'),
+            surname=data.get('surname'),
+            birthday=data.get('birthday'),
+            blood_type=data.get('blood_type'),
+            health_info_json=data.get('health_info_json')
+        )
+
+        persistence.update_user(uuid, updated_user)
+        return jsonify({'message': 'User updated successfully', 'data': data}), 200
+    except (ValueError, TypeError) as e:
+        return jsonify({'error': f'Invalid data format: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 
 @app.route('/user/delete', methods=['POST'])
 def user_delete() -> tuple:
     """Delete a user"""
-    data = request.get_json()
-    uuid = data.get('uuid')
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
 
-    persistence.delete_user(uuid)
-    return jsonify({'message': 'User deleted successfully', 'uuid': uuid}), 200
+        uuid = data.get('uuid')
+
+        # Validate required fields
+        if not uuid:
+            return jsonify({'error': 'Missing required field: uuid'}), 400
+
+        persistence.delete_user(uuid)
+        return jsonify({'message': 'User deleted successfully', 'uuid': uuid}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
