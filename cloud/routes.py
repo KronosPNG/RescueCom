@@ -4,23 +4,23 @@ from cloud import persistence
 from cloud.app import app
 
 
-@app.route('/request/forward', methods=['POST'])
-def request_forward() -> tuple:
-    """Forward a request"""
+@app.route('/emergency/forward', methods=['POST'])
+def emergency_forward() -> tuple:
+    """Forward an emergency"""
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
-        # TODO: get parameters from the request and forward the corresponding request
-        # if rescuee_id and rescuer_id are not None, forward the request to the rescuer
-        return jsonify({'message': 'Request forwarded successfully', 'data': data}), 200
+        # TODO: get parameters from the request and forward the corresponding emergency
+        # if rescuee_id and rescuer_id are not None, forward the emergency to the rescuer
+        return jsonify({'message': 'Emergency forwarded successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
-@app.route('/request/accept', methods=['POST'])
-def request_accept() -> tuple:
-    """Accept a request"""
+@app.route('/emergency/accept', methods=['POST'])
+def emergency_accept() -> tuple:
+    """Accept an emergency"""
     try:
         data = request.get_json()
         if not data:
@@ -46,14 +46,14 @@ def request_accept() -> tuple:
 
         persistence.save_encrypted_emergency(encrypted_emergency)
 
-        return jsonify({'message': 'Request accepted successfully', 'data': data}), 200
+        return jsonify({'message': 'Emergency accepted successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
-@app.route('/request/update', methods=['POST'])
-def request_update() -> tuple:
-    """Update a request"""
+@app.route('/emergency/update', methods=['POST'])
+def emergency_update() -> tuple:
+    """Update an emergency"""
     try:
         data = request.get_json()
         if not data:
@@ -79,14 +79,14 @@ def request_update() -> tuple:
 
         persistence.update_encrypted_emergency(user_uuid, emergency_id, encrypted_emergency)
 
-        return jsonify({'message': 'Request updated successfully', 'data': data}), 200
+        return jsonify({'message': 'Emergency updated successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
-@app.route('/request/delete', methods=['POST'])
-def request_delete() -> tuple:
-    """Delete a request"""
+@app.route('/emergency/delete', methods=['POST'])
+def emergency_delete() -> tuple:
+    """Delete an emergency"""
     try:
         data = request.get_json()
         if not data:
@@ -100,10 +100,10 @@ def request_delete() -> tuple:
         if not user_uuid or not emergency_id:
             return jsonify({'error': 'Missing required fields: user_uuid and emergency_id'}), 400
 
-        # Delete the request from the database
+        # Delete the emergency from the database
         persistence.delete_request(user_uuid, emergency_id)
 
-        return jsonify({'message': 'Request deleted successfully', 'data': data}), 200
+        return jsonify({'message': 'Emergency deleted successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
