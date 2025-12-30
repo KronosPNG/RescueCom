@@ -193,13 +193,12 @@ class DatabaseManager:
                 and the original database error is re-raised.
         """
 
-        insert_query = "INSERT INTO encrypted_emergency(user_uuid, routing_info_json, blob) VALUES (?, ?, ?)"
+        insert_query = "INSERT INTO encrypted_emergency(emergency_id, user_uuid, routing_info_json, blob) VALUES (?, ?, ?, ?)"
 
         # Begin transaction
         self.conn.execute("BEGIN")
         try:
-            # Skip the field `id`
-            values = enc_emergency.to_db_tuple()[1:]
+            values = enc_emergency.to_db_tuple()
             self.conn.execute(insert_query, values)
             self.conn.commit()
         except self.conn.Error as e:
