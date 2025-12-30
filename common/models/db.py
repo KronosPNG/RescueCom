@@ -3,7 +3,7 @@ from typing import List, Self
 
 import sqlite3
 from datetime import datetime
-from models import emergency, user, enc_emergency
+from common.models import emergency, user, enc_emergency
 
 
 class DatabaseManager:
@@ -83,6 +83,7 @@ class DatabaseManager:
             street_number INTEGER NOT NULL,
             place_description TEXT,
             photo_b64 TEXT,
+            severity INTEGER NOT NULL,
             resolved INTEGER NOT NULL,
             details_json TEXT,
 
@@ -92,6 +93,7 @@ class DatabaseManager:
         CREATE TABLE IF NOT EXISTS encrypted_emergency (
             emergency_id INTEGER NOT NULL,
             user_uuid TEXT NOT NULL,
+            severity INTEGER NOT NULL,
             routing_info_json TEXT NOT NULL,
             blob BLOB NOT NULL,
 
@@ -159,8 +161,8 @@ class DatabaseManager:
         """
 
         insert_query: str = """
-            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64, resolved, details_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64, severity, resolved, details_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Begin transaction
@@ -193,13 +195,12 @@ class DatabaseManager:
                 and the original database error is re-raised.
         """
 
-        insert_query = "INSERT INTO encrypted_emergency(user_uuid, routing_info_json, blob) VALUES (?, ?, ?)"
+        insert_query = "INSERT INTO encrypted_emergency(emergency_id, user_uuid, severity, routing_info_json, blob) VALUES (?, ?, ?, ?, ?)"
 
         # Begin transaction
         self.conn.execute("BEGIN")
         try:
-            # Skip the field `id`
-            values = enc_emergency.to_db_tuple()[1:]
+            values = enc_emergency.to_db_tuple()
             self.conn.execute(insert_query, values)
             self.conn.commit()
         except self.conn.Error as e:
@@ -419,7 +420,7 @@ class DatabaseManager:
 
         select_query = """
             SELECT id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, resolved, details_json
+            place_description, photo_b64, severity, resolved, details_json
             FROM emergency
         """
 
@@ -439,8 +440,9 @@ class DatabaseManager:
                     street_number=row[5],
                     place_description=row[6],
                     photo_b64=row[7],
-                    resolved=row[8] == 1,  # If True the emergency is resolved
-                    details_json=row[9],
+                    severity=row[8],
+                    resolved=row[9] == 1,  # If True the emergency is resolved
+                    details_json=row[10],
                 )
             )
 
@@ -474,7 +476,7 @@ class DatabaseManager:
 
         select_query = """
             SELECT id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, resolved, details_json
+            place_description, photo_b64, severity, resolved, details_json
             FROM emergency
             WHERE user_uuid = ? AND id = ?
         """
@@ -494,8 +496,9 @@ class DatabaseManager:
             street_number=result[5],
             place_description=result[6],
             photo_b64=result[7],
-            resolved=result[8] == 1,  # If True the emergency is resolved
-            details_json=result[9],
+            severity=result[8],
+            resolved=result[9] == 1,  # If True the emergency is resolved
+            details_json=result[10],
         )
 
     def get_emergencies_by_user_uuid(self, user_uuid: str) -> List[emergency.Emergency]:
@@ -524,7 +527,7 @@ class DatabaseManager:
 
         select_query = """
             SELECT id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, resolved, details_json
+            place_description, photo_b64, severity, resolved, details_json
             FROM emergency
             WHERE user_uuid = ?
         """
@@ -545,8 +548,9 @@ class DatabaseManager:
                     street_number=row[5],
                     place_description=row[6],
                     photo_b64=row[7],
-                    resolved=row[8] == 1,  # If True the emergency is resolved
-                    details_json=row[9],
+                    severity=row[8],
+                    resolved=row[9] == 1,  # If True the emergency is resolved
+                    details_json=row[10],
                 )
             )
 
@@ -570,7 +574,7 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, routing_info_json, blob
+            SELECT id, user_uuid, severity, routing_info_json, blob
             FROM encrypted_emergency
         """
 
@@ -584,8 +588,9 @@ class DatabaseManager:
                 enc_emergency.EncryptedEmergency(
                     emergency_id=row[0],
                     user_uuid=row[1],
-                    routing_info_json=row[2],
-                    blob=row[3],
+                    severity=row[2],
+                    routing_info_json=row[3],
+                    blob=row[4],
                 )
             )
 
@@ -652,8 +657,8 @@ class DatabaseManager:
 
         update_query = """
             UPDATE emergency
-            position = ?, address = ?, city = ?, street_number = ?,
-            place_description = ?, photo_b64 = ?, resolved = ?,
+            SET position = ?, address = ?, city = ?, street_number = ?,
+            place_description = ?, photo_b64 = ?, severity = ?, resolved = ?,
             details_json = ?
             WHERE id = ? AND user_uuid = ?
         """
@@ -664,6 +669,53 @@ class DatabaseManager:
             self.cursor.execute(
                 update_query,
                 (*emergency.to_db_tuple()[2:], id, uuid),
+            )
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
+
+    def update_encyrpted_emergency(
+        self,
+        user_uuid: str,
+        emergency_id: int,
+        enc_emergency: enc_emergency.EncryptedEmergency,
+    ) -> None:
+        """
+        Updates an existing encrypted emergency record in the database.
+
+        This method updates the encrypted data associated with an emergency
+        identified by the given user UUID and emergency ID. The update
+        operation is executed within an explicit transaction: changes are
+        committed on success and rolled back if an error occurs.
+
+        Args:
+            user_uuid (str): The UUID of the user associated with the encrypted
+                emergency.
+            emergency_id (int): The unique identifier of the encrypted emergency
+                to update.
+            enc_emergency (enc_emergency.EncryptedEmergency): An
+                EncryptedEmergency instance containing the updated encrypted
+                data. The identifying fields of the object are not used for
+                record selection.
+
+        Raises:
+            sqlite3.Error: If the update operation fails, the transaction is
+                rolled back and the original database error is re-raised.
+        """
+
+        update_query = """
+            UPDATE encrypted_emergency
+            severity = ?, routing_info_json = ?, blob = ?
+            WHERE user_uuid = ?, emergency_id = ?
+        """
+
+        # Beging transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.cursor.execute(
+                update_query,
+                (*enc_emergency.to_db_tuple()[2:], user_uuid, emergency_id),
             )
             self.conn.commit()
         except self.conn.Error as e:

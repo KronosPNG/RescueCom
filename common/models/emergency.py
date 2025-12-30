@@ -1,16 +1,4 @@
 class Emergency:
-    id: int
-    user_uuid: str
-    position: tuple[float, float]
-    address: str
-    city: str
-    street_number: int
-    place_description: str
-    photo_b64: str
-    resolved: bool
-    # TODO: could be a new table
-    details_json: str
-
     def __init__(
         self,
         id: int,
@@ -18,7 +6,8 @@ class Emergency:
         address: str,
         city: str,
         street_number: int,
-        resolved: bool,
+        severity: int,
+        resolved: bool = False,
         position: tuple[float, float] = (0.0, 0.0),
         place_description: str = "",
         photo_b64: str = "",
@@ -32,6 +21,7 @@ class Emergency:
         self.street_number = street_number
         self.place_description = place_description
         self.photo_b64 = photo_b64
+        self.severity = severity
         self.resolved = resolved
         self.details_json = details_json
 
@@ -53,6 +43,7 @@ class Emergency:
                 - street_number (int): Street number of the address.
                 - place_description (str): Additional place description.
                 - photo_b64 (str): Base64-encoded photo associated with the emergency.
+                - severity (int): The severity score of the emergency.
                 - resolved (bool): Whether the emergency has been resolved.
                 - details_json (str): Serialized emergency details.
         """
@@ -67,6 +58,7 @@ class Emergency:
             self.street_number,
             self.place_description,
             self.photo_b64,
+            self.severity,
             self.resolved,
             self.details_json,
         )

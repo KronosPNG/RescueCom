@@ -84,11 +84,31 @@ def update_encrypted_emergency(
     emergency_id: int,
     enc_emergency: enc_emergency.EncryptedEmergency,
 ) -> None:
-    # TODO: implement this
-    pass
+    """
+    Updates an encrypted emergency record in the database.
+
+    This function updates the encrypted data of an emergency associated with
+    the given user UUID and emergency ID by delegating the operation to the
+    `DatabaseManager`.
+
+    Args:
+        user_uuid (str): The UUID of the user associated with the encrypted
+            emergency.
+        emergency_id (int): The unique identifier of the encrypted emergency
+            to update.
+        enc_emergency (enc_emergency.EncryptedEmergency): An
+            EncryptedEmergency instance containing the updated encrypted data.
+
+    Raises:
+        sqlite3.Error: If an error occurs while updating the encrypted
+            emergency in the database.
+    """
+
+    dbm = db.DatabaseManager.get_instance()
+    dbm.update_encyrpted_emergency(user_uuid, emergency_id, enc_emergency)
 
 
-def delete_request(user_uuid: str, emergency_id: int):
+def delete_encrypted_emergency(user_uuid: str, emergency_id: int):
     """
     Deletes an encrypted emergency from the database.
 
