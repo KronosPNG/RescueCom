@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Dettaglio Richiesta</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <strong>ID: {{ richiesta.id }} | PRIORIT&#193; {{ richiesta.priorita }}</strong>
+                <span class="badge bg-secondary">{{ richiesta.stato }}</span>
+            </div>
+
+            <h5>Utente</h5>
+            <p>{{ richiesta.utente.nome }} {{ richiesta.utente.cognome }}</p>
+
+            <h5>Timestamp</h5>
+            <p>{{ richiesta.timestamp }}</p>
+
+            <h5>Posizione</h5>
+            <p>{{ richiesta.posizione }}</p>
+
+            <h5>Descrizione</h5>
+            <p>{{ richiesta.descrizione }}</p>
+
+            <h5>Data nascita</h5>
+            <p>{{ richiesta.utente.datanascita }}</p>
+
+            <h5>Gruppo Sanguigno</h5>
+            <p>{{ richiesta.utente.grupposanguigno }}</p>
+
+            <h5>Problematiche</h5>
+            {% if richiesta.utente.problematiche %}
+            <ul>
+                {% for problema in richiesta.utente.problematiche %}
+                <li>{{ problema }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>Nessuna problematica registrata.</p>
+            {% endif %}
+
+
+            <a href="/richieste.html" class="btn btn-secondary mt-3">Torna indietro</a>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <h2 class="mb-4">Richieste di Soccorso</h2>
+
+    {% for r in richieste %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center">
+                <strong>ID: {{ r.id }} PRIORIT&#193; {{r.priorita}}</strong>
+                {{ r.stato }}
+                </span>
+                <button type="button" class="btn btn-primary btn-sm ms-2" title="Visualizza dettagli" onclick="window.location.href='/richiesta?id={{ r.id }}'">
+                    <i class="bi bi-eye-fill"></i>
+                </button>
+            </div>
+
+            <hr>
+
+            <!-- Nome e cognome utente -->
+            <h5 class="mb-1">
+                {{ r.utente.nome }} {{ r.utente.cognome }}
+            </h5>
+
+            <small class="text-muted">
+                {{ r.timestamp }}
+            </small>
+
+            <p class="mt-2 mb-1">
+                {{ r.posizione }}
+            </p>
+
+            <p class="mb-0">
+                {{ r.descrizione }}
+            </p>
+
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}
