@@ -75,7 +75,7 @@ class DatabaseManager:
         );
 
         CREATE TABLE IF NOT EXISTS emergency (
-            id INTEGER PRIMARY KEY,
+            emergency_id INTEGER PRIMARY KEY,
             user_uuid TEXT NOT NULL,
             position TEXT DEFAULT '0,0',
             address TEXT NOT NULL,
@@ -86,6 +86,7 @@ class DatabaseManager:
             severity INTEGER NOT NULL,
             resolved INTEGER NOT NULL,
             details_json TEXT,
+            created_at DATE DEFAULT CURRENT_TIMESTAMP,
 
             FOREIGN KEY (user_uuid) REFERENCES user(uuid)
         );
@@ -96,6 +97,7 @@ class DatabaseManager:
             severity INTEGER NOT NULL,
             routing_info_json TEXT NOT NULL,
             blob BLOB NOT NULL,
+            created_at DATE DEFAULT CURRENT_TIMESTAMP,
 
             /*
                 In order to prevent the violation of
@@ -161,8 +163,8 @@ class DatabaseManager:
         """
 
         insert_query: str = """
-            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64, severity, resolved, details_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64, severity, resolved, details_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Begin transaction
@@ -195,7 +197,10 @@ class DatabaseManager:
                 and the original database error is re-raised.
         """
 
-        insert_query = "INSERT INTO encrypted_emergency(emergency_id, user_uuid, severity, routing_info_json, blob) VALUES (?, ?, ?, ?, ?)"
+        insert_query = """
+            INSERT INTO encrypted_emergency(emergency_id, user_uuid, severity, routing_info_json, blob, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """
 
         # Begin transaction
         self.conn.execute("BEGIN")
@@ -419,8 +424,8 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, severity, resolved, details_json
+            SELECT emergency_id, user_uuid, position, address, city, street_number,
+            place_description, photo_b64, severity, resolved, details_json, created_at
             FROM emergency
         """
 
@@ -432,7 +437,7 @@ class DatabaseManager:
         for row in result:
             emergencies.append(
                 emergency.Emergency(
-                    id=row[0],
+                    emergency_id=row[0],
                     user_uuid=row[1],
                     position=tuple(row[2].split(",")),
                     address=row[3],
@@ -443,6 +448,7 @@ class DatabaseManager:
                     severity=row[8],
                     resolved=row[9] == 1,  # If True the emergency is resolved
                     details_json=row[10],
+                    created_at=datetime.strptime(row[11], "%Y-%m-%d %H:%M:%S.%f"),
                 )
             )
 
@@ -475,8 +481,8 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, severity, resolved, details_json
+            SELECT emergency_id, user_uuid, position, address, city, street_number,
+            place_description, photo_b64, severity, resolved, details_json, created_at
             FROM emergency
             WHERE user_uuid = ? AND id = ?
         """
@@ -488,7 +494,7 @@ class DatabaseManager:
             return None
 
         return emergency.Emergency(
-            id=result[0],
+            emergency_id=result[0],
             user_uuid=result[1],
             position=tuple(result[2].split(",")),
             address=result[3],
@@ -499,6 +505,7 @@ class DatabaseManager:
             severity=result[8],
             resolved=result[9] == 1,  # If True the emergency is resolved
             details_json=result[10],
+            created_at=datetime.strptime(result[11], "%Y-%m-%d %H:%M:%S.%f"),
         )
 
     def get_emergencies_by_user_uuid(self, user_uuid: str) -> List[emergency.Emergency]:
@@ -526,8 +533,8 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, severity, resolved, details_json
+            SELECT emergency_id, user_uuid, position, address, city, street_number,
+            place_description, photo_b64, severity, resolved, details_json, created_at
             FROM emergency
             WHERE user_uuid = ?
         """
@@ -540,7 +547,7 @@ class DatabaseManager:
         for row in result:
             emergencies.append(
                 emergency.Emergency(
-                    id=row[0],
+                    emergency_id=row[0],
                     user_uuid=row[1],
                     position=tuple(row[2].split(",")),
                     address=row[3],
@@ -551,6 +558,7 @@ class DatabaseManager:
                     severity=row[8],
                     resolved=row[9] == 1,  # If True the emergency is resolved
                     details_json=row[10],
+                    created_at=datetime.strptime(result[11], "%Y-%m-%d %H:%M:%S.%f"),
                 )
             )
 
@@ -574,7 +582,7 @@ class DatabaseManager:
         """
 
         select_query = """
-            SELECT id, user_uuid, severity, routing_info_json, blob
+            SELECT emergency_id, user_uuid, severity, routing_info_json, blob, created_at
             FROM encrypted_emergency
         """
 
@@ -591,6 +599,7 @@ class DatabaseManager:
                     severity=row[2],
                     routing_info_json=row[3],
                     blob=row[4],
+                    created_at=datetime.strptime(result[5], "%Y-%m-%d %H:%M:%S.%f"),
                 )
             )
 
@@ -659,8 +668,8 @@ class DatabaseManager:
             UPDATE emergency
             SET position = ?, address = ?, city = ?, street_number = ?,
             place_description = ?, photo_b64 = ?, severity = ?, resolved = ?,
-            details_json = ?
-            WHERE id = ? AND user_uuid = ?
+            details_json = ?, created_at = ?
+            WHERE emergency_id = ? AND user_uuid = ?
         """
 
         # Beging transaction
@@ -706,7 +715,7 @@ class DatabaseManager:
 
         update_query = """
             UPDATE encrypted_emergency
-            severity = ?, routing_info_json = ?, blob = ?
+            severity = ?, routing_info_json = ?, blob = ?, created_at = ?
             WHERE user_uuid = ?, emergency_id = ?
         """
 
@@ -773,7 +782,7 @@ class DatabaseManager:
 
         delete_query = """
             DELETE FROM emergency
-            WHERE id = ? AND user_uuid = ?
+            WHERE emergency_id = ? AND user_uuid = ?
         """
 
         # Beging transaction

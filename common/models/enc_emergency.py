@@ -1,3 +1,6 @@
+import datetime
+
+
 class EncryptedEmergency:
     def __init__(
         self,
@@ -6,12 +9,14 @@ class EncryptedEmergency:
         severity: int,
         routing_info_json: str,
         blob: bytes,
+        created_at: datetime.datetime,
     ) -> None:
         self.emergency_id = emergency_id
         self.user_uuid = user_uuid
         self.severity = severity
         self.routing_info_json = routing_info_json
         self.blob = blob
+        self.created_at = created_at
 
     def to_db_tuple(self) -> tuple:
         """
@@ -27,6 +32,8 @@ class EncryptedEmergency:
                 - severity (int): The severity score of the emergency.
                 - routing_info_json (str): Serialized routing informations.
                 - blob (bytes): encrypted values
+                - created_at (datetime.datetime): Timestamp indicating when the
+                    emergency was created.
         """
         return (
             self.emergency_id,
@@ -34,4 +41,5 @@ class EncryptedEmergency:
             self.severity,
             self.routing_info_json,
             self.blob,
+            self.created_at,
         )
