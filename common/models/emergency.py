@@ -1,3 +1,6 @@
+import datetime
+
+
 class Emergency:
     def __init__(
         self,
@@ -7,6 +10,7 @@ class Emergency:
         city: str,
         street_number: int,
         severity: int,
+        created_at: datetime.datetime,
         resolved: bool = False,
         position: tuple[float, float] = (0.0, 0.0),
         place_description: str = "",
@@ -24,6 +28,7 @@ class Emergency:
         self.severity = severity
         self.resolved = resolved
         self.details_json = details_json
+        self.created_at = created_at
 
     def to_db_tuple(self) -> tuple:
         """
@@ -46,6 +51,8 @@ class Emergency:
                 - severity (int): The severity score of the emergency.
                 - resolved (bool): Whether the emergency has been resolved.
                 - details_json (str): Serialized emergency details.
+                - created_at (datetime.datetime): Timestamp indicating when the
+                    emergency was created.
         """
 
         return (
@@ -61,4 +68,5 @@ class Emergency:
             self.severity,
             self.resolved,
             self.details_json,
+            self.created_at,
         )
