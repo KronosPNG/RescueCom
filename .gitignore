@@ -96,4 +96,4 @@ pip-selfcheck.json
 .idea
 
 ### Test frontend
-/app/template_viewer.py
+/client/template_viewer.py
