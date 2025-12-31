@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap-icons.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href ="{{ url_for('static', filename='css/registration.css') }}" rel="stylesheet">
+    <title>Registrazione</title>
+</head>
+<body>
+    <img src="{{ url_for('static', filename='image/image.png') }}" width="100%" height="100%">
+        <form action="/accept" method="post">
+            <h1 id="registrazione">Registrazione</h1>
+            <div id="content_form">
+                <div class="label">
+                    <p class="obligatorio">Nome</p>
+                    <input type="text" name="name" id="" placeholder="Es. Mario" required >
+                </div>
+                <div class="label">
+                    <p class="obligatorio">Cognome</p>
+                    <input type="text" name="surname" id="" placeholder="Es. Rossi" required>
+                </div>
+                <div class="label">
+                    <p class="obligatorio">Data di nascita</p>
+                    <input type="date" name="date" id="data" required>
+                </div>
+                <div class="label">
+                        <p class="obligatorio">Gruppo Sanguigno</p>
+                    <select name="blood" id="sanguigno" required>
+                        <option value="">Seleziona il gruppo</option>
+                        <option value="a+">A+</option>
+                        <option value="b-">A-</option>
+                        <option value="b+">B+</option>
+                        <option value="b-">B-</option>
+                        <option value="ab+">AB+</option>
+                        <option value="ab-">AB-</option>
+                        <option value="0+">0+</option>
+                        <option value="0-">0-</option>
+                    </select>
+                </div>
+                <div class="label">
+                    <p>Allergie ai medicinali</p>
+                    <textarea name="description" id="description" placeholder="Scrivi tutti i medicinali/principiti attivi"></textarea>
+                </div>
+                <div id="checkbox">
+                    <div class="label">
+                        <p>Disabilità</p>
+                        <input type="checkbox" name="motoria" id="">Motoria (es: sedia a rotelle, paralisi, ecc...)
+                        <br>
+                        <input type="checkbox" name="sensoriale-visiva" id="">Sensoriale visiva (es: cecità, ipovisione)
+                        <br>
+                        <input type="checkbox" name="sensoriale-uditiva" id="">Sensoriale uditiva (es: Sordità, ipoacusia)
+                        <br>
+                        <input type="checkbox" name="cognitiva" id="">Cognitiva/Intellettiva (es: Autismo, sindrome di Down)
+                        <br>
+                        <input type="checkbox" name="psichica" id="">Psichica: (es. Schizofrenia, disturbo bipolare)
+                    </div>
+                </div>
+                <div id="content_button">
+                    <div id="avanti">Avanti</div>
+                </div>
+            </div>
+                <div id="second">
+                    <div id="checkbox">
+                    <div class="label">
+                        <h3>Malattie Gravi / Patologie Croniche</h3>
+                        <p>Cardiovascolari</p>
+                        <input type="checkbox" name="ipertensione" id="">Ipertensione arteriosa
+                        <br>
+                        <input type="checkbox" name="aritmie" id="">Aritmie (Fibrillazione atriale, ecc..)
+                        <br>
+                        <input type="checkbox" name="insuff-cardiaca" id="">Insufficienza cardiaca
+                        <br>
+                        <input type="checkbox" name="pacemaker" id="">Portatore di Pacemaker/Defibrillatore impiantabile
+                        <br>
+                        <input type="checkbox" name="infarto" id="">Pregresso infarto
+                    </div>
+                    <div class="label">
+                        <p>Respiratorie</p>
+                        <input type="checkbox" name="asma" id="">Asma
+                        <br>
+                        <input type="checkbox" name="bpco" id="">BPCO (Broncopneumopatia cronica ostruttiva)
+                        <br>
+                        <input type="checkbox" name="insuff-respiratoria" id="">Insufficienza respiratoria
+                    </div>
+                    <div class="label">
+                        <p>Metaboliche</p>
+                        <input type="checkbox" name="asma" id="">Diabete di tipo 1
+                        <br>
+                        <input type="checkbox" name="bpco" id="">Diabete di tipo 2
+                    </div>
+
+                    <div class="label">
+                        <p>Neurologiche</p>
+                        <input type="checkbox" name="epilessia" id="">Epilessia
+                        <br>
+                        <input type="checkbox" name="parkinson" id="">Morbo di Parkinson
+                        <br>
+                        <input type="checkbox" name="sclerosi" id="">Sclerosi multipla
+                        <br>
+                        <input type="checkbox" name="ictus" id="">Ictus pregresso
+                    </div>
+                     <div class="label">
+                        <p>Altro</p>
+                        <input type="checkbox" name="dialisi" id="">Insufficienza renale (Dialisi)
+                        <br>
+                        <input type="checkbox" name="coagulazione" id="">Problemi di coagulazione  - Rischio emorragie.
+                        <br>
+                        <input type="checkbox" name="trapianto" id="">Trapianti d'organo (Immunodepressione).
+                    </div>
+                    <div id="content_button_second">
+                        <span id="indietro">Indietro</span>
+                        <br>
+                        <input type="submit" value="Invia" id="invia_form">
+                    </div>
+                </div>
+        </div>
+
+        </form>
+        <script>
+            var button_avanti = document.getElementById("avanti");
+            var button_indietro = document.getElementById("indietro");
+            var form = document.getElementById("content_form");
+            var another_form = document.getElementById("second");
+            button_avanti.addEventListener("click", () =>{
+                form.style.display="none";
+                another_form.style.display="flex";
+            });
+            button_indietro.addEventListener("click", () =>{
+                form.style.display="flex";
+                another_form.style.display="none";
+            });
+        </script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+/* --- FONTS & ROOT --- */
+@font-face {
+    font-family: 'BentonSans Book';
+    src: url("/app/static/css/fonts/Inter-VariableFont_opsz,wght.ttf") format("truetype");
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    font-family: 'BentonSans Book', system-ui, -apple-system, sans-serif;
+}
+
+/* --- RESET & BODY --- */
+body {
+    background-color: #C6E8FF;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Evita scroll orizzontale indesiderato */
+}
+
+/* --- CONTENITORE PRINCIPALE --- */
+#content_form {
+    display: none;
+    flex-direction: column;
+    position: relative;
+    width: 100%;
+}
+#second{
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: 100%;
+}
+/* --- IMMAGINE (Stile Base / Desktop) --- */
+img {
+    position: absolute;
+    left: 40%;
+    top: 150px;
+    transform: translateX(-50%);
+    width: 1000px;
+    max-width: 90%; height: auto;
+}
+
+/* --- FORM (Stile Base / Desktop) --- */
+form {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    right: 10%; top: 100px;
+    top:40px;
+    background-color: white;       
+    max-width: 600px;
+    height: 950px;
+    padding: 30px;
+    border-radius: 15px;
+    box-sizing: border-box; /* Include padding nelle dimensioni */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1); /* Ombra estetica */
+    z-index: 10; /* Sta SOPRA l'immagine */
+}
+
+/* --- ELEMENTI INTERNI AL FORM --- */
+#registrazione {
+    font-weight: 900;
+    color: #12305E;
+    text-align: center;
+    margin-top: 0;
+}
+/* Aggiunge l'asterisco automaticamente prima di ogni <p> con classe "obbligatorio" */
+.obligatorio::before {
+    content: "*";
+    color: darkred;
+    font-weight: bold;
+}
+.label {
+    margin-left: 5px;
+    margin-bottom: 5px;
+    color: black;
+}
+
+p {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+/* Input responsive */
+input,select {
+    padding: 12px; /* Un po' più comodo da cliccare */
+    border: 1px solid #ccc; /* Colore default */
+    border-radius: 8px;
+    outline: none;
+    transition: 0.3s;
+    box-sizing: border-box; /* Essenziale per non rompere il layout */
+    margin-bottom: 15px;
+    font-family: inherit;
+}
+
+textarea{
+    padding: 12px; /* Un po' più comodo da cliccare */
+    border: 1px solid #ccc; /* Colore default */
+    border-radius: 8px;
+    outline: none;
+    transition: 0.3s;
+    width: 100%; /* Occupa tutto lo spazio disponibile nel form */
+    box-sizing: border-box; /* Essenziale per non rompere il layout */
+    margin-bottom: 15px;
+    font-family: inherit;
+}
+#data, #sanguigno{
+    padding: 12px; /* Un po' più comodo da cliccare */
+    border: 1px solid #ccc; /* Colore default */
+    border-radius: 8px;
+    outline: none;
+    transition: 0.3s;
+    width: 55%; /* Occupa tutto lo spazio disponibile nel form */
+    box-sizing: border-box; /* Essenziale per non rompere il layout */
+    margin-bottom: 15px;
+    
+}
+input:focus, textarea:focus, select:focus {
+    border-color: #12305E;
+    box-shadow: 0 0 0 3px rgba(18, 48, 94, 0.1);
+}
+
+/* Gestione della textarea specifica */
+#description {
+    width: 100%;
+    min-height: 100px;
+    resize: vertical; /* L'utente può allungarla ma non allargarla */
+}
+
+#content_button{
+    position: absolute;
+    text-align: center;
+    left: 50%;
+    bottom: -50px;
+    transform: translate(-50%);
+    width: 100px;
+}
+#content_button_second{
+    text-align: center;
+}
+
+#avanti{
+    padding: 5px;
+    background-color: #C6E8FF;
+    border-radius: 8px;
+}
+
+#indietro{
+    padding: 10px;
+    background-color: #C6E8FF;
+    border-radius: 8px;
+}
+#invia_form{
+    margin-top: 15px;
+    border: none;
+    width: 77px;
+    background-color:#C6E8FF ;
+}
