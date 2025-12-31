@@ -1,3 +1,40 @@
-<div id="nav-bar">
-  <p>Questa è una nav-bar</p>
-</div>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nav-bar.css') }}">
+
+    <div id="nav-bar">
+        <div id="content">
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <img src="{{ url_for('static', filename='image/logo.png') }}" width="200px" id="logo">
+            <div id="contenuto_Rescuer">
+                <a href="" id="diventa_rescuer">
+                    Passa a rescuer
+                </a>
+            </div>
+        </div>
+        <div id="divisore"></div>
+        <div class="nav">Chi siamo</div>
+        <div class="nav">
+            Invia/Modifica richiesta di soccorso
+        </div>
+        <div class="nav">
+            Modifica dei dati 
+        </div>
+    </div>
+    
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+            // Seleziona l'hamburger e la barra di navigazione
+                const hamburger = document.getElementById('hamburger');
+                const navBar = document.getElementById('nav-bar');
+                const divisore = document.getElementById('divisore')
+                // Aggiungi l'evento click
+                hamburger.addEventListener('click', () => {
+                    // Alterna la classe 'open' sul contenitore principale
+                    navBar.classList.toggle('open');
+                });
+            });
+        </script>
