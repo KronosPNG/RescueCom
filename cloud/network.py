@@ -1,7 +1,14 @@
-from common.models import *
-from common.services.crypto import *
-from clientDTO import ClientDTO
-import os, requests, uuid, app, struct, base64
+import base64
+import os
+import uuid
+from pathlib import Path
+
+import app
+import requests
+# from clientDTO import ClientDTO
+
+from common.models import db, emergency, enc_emergency
+from common.services import crypto, emergency_queue
 
 # TODO: do better
 CERTIFICATE_PATH = os.getenv("CERTIFICATE_PATH", "./certificates/cert.pem")
@@ -20,13 +27,24 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
             continue
 
         encrypted_emergency = enc_emergency.EncryptedEmergency(
-                emergency.id,
-                emergency.user_uuid,
-                "", # unnecessary in this case
-                encrypt(rescuer.enc_cipher, rescuer.nonce, emergency.pack(), b"")
-                )
+            emergency_id=emergency.emergency_id,
+            user_uuid=emergency.user_uuid,
+            severity=emergency.severity,
+            routing_info_json="",  # unnecessary in this case
+            blob=crypto.encrypt(
+                rescuer.enc_cipher, rescuer.nonce, emergency.pack(), b""
+            ),
+            created_at=emergency.created_at,
+        )
 
-        resp = requests.post(rescuer.ip + "/ask/vittorio", json={"encrypted_emergency": base64.b64encode(str(encrypted_emergency.to_db_tuple()))})
+        resp = requests.post(
+            rescuer.ip + "/ask/vittorio",
+            json={
+                "encrypted_emergency": base64.b64encode(
+                    str(encrypted_emergency.to_db_tuple()).encode()
+                )
+            },
+        )
         if not resp.ok:
             continue
 
@@ -56,15 +74,18 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
     if not isinstance(client_ip, str) or not isinstance(client_nonce, bytes):
         raise TypeError("Wrong types for arguments")
 
-    certificate = load_certificate(CERTIFICATE_PATH)
+    certificate = crypto.load_certificate(Path(CERTIFICATE_PATH))
 
     nonce = os.urandom(12)
 
-    skey, pkey = gen_ecdh_keys()
+    skey, pkey = crypto.gen_ecdh_keys()
 
-    signature = sign(skey, nonce)
+    signature = crypto.sign(skey, nonce)
 
-    resp = requests.post(client_ip + "/certificate/verify", json={"certificate": cert, "nonce": nonce, "signature": signature})
+    resp = requests.post(
+        client_ip + "/certificate/verify",
+        json={"certificate": certificate, "nonce": nonce, "signature": signature},
+    )
     if not resp.ok:
         raise requests.RequestException("Request failed")
 
@@ -72,14 +93,16 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
     client_pkey_bytes = resp.json["pkey"]
 
     # raises ValueError
-    client_pkey = decode_ecdh_pkey(client_pkey_bytes)
+    client_pkey = crypto.decode_ecdh_pkey(client_pkey_bytes)
 
-    encoded_pkey = encode_ecdh_pkey(pkey)
-    resp = requests.post(client_ip + "/publickey/register", json={"public_key": encoded_pkey})
+    encoded_pkey = crypto.encode_ecdh_pkey(pkey)
+    resp = requests.post(
+        client_ip + "/publickey/register", json={"public_key": encoded_pkey}
+    )
 
-    key = derive_shared_key(skey, client_pkey)
+    key = crypto.derive_shared_key(skey, client_pkey)
 
-    enc_cipher, dec_cipher = get_ciphers(key)
+    enc_cipher, dec_cipher = crypto.get_ciphers(key)
 
     app.CLIENTS[client_uuid] = (client_ip, enc_cipher, dec_cipher, client_nonce)
 
