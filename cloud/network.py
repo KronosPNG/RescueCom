@@ -5,7 +5,6 @@ import os, requests, uuid, app, struct, base64
 
 # TODO: do better
 CERTIFICATE_PATH = os.getenv("CERTIFICATE_PATH", "./certificates/cert.pem")
-DB_PATH = os.getenv("DB_PATH", "idk")
 
 
 def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
@@ -16,10 +15,6 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
         emergency (Emergency): emergency to send to Rescuers
     """
 
-    # Utility function
-    def pack_str(s: str):
-        return struct.pack(f"<I@{}s".format(len(s)), len(s), s.encode())
-
     for rescuer in app.RESCUERS.values():
         if rescuer.busy:
             continue
@@ -28,20 +23,7 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
                 emergency.id,
                 emergency.user_uuid,
                 "", # unnecessary in this case
-                encrypt(rescuer.enc_cipher, rescuer.nonce,
-
-                        pack_str(emergency.position) +
-                        pack_str(emergency.address) +
-                        pack_str(emergency.city) +
-                        struct.pack("<I", emergency.street_number) +
-                        pack_str(emergency.place_description) +
-                        pack_str(emergency.photo_b64) +
-                        struct.pack("<I", emergency.severity) +
-                        struct.pack("?", emergency.resolved) +
-                        pack_str(emergency.details_json),
-
-                        b"" # not needed
-                    )
+                encrypt(rescuer.enc_cipher, rescuer.nonce, emergency.pack(), b"")
                 )
 
         resp = requests.post(rescuer.ip + "/ask/vittorio", json={"encrypted_emergency": base64.b64encode(str(encrypted_emergency.to_db_tuple()))})
@@ -101,7 +83,7 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
 
     app.CLIENTS[client_uuid] = (client_ip, enc_cipher, dec_cipher, client_nonce)
 
-    user = db.DatabaseManager.get_instance(DB_PATH).get_user_by_uuid(str(client_uuid))
+    user = db.DatabaseManager.get_instance().get_user_by_uuid(str(client_uuid))
 
     if user is not None and user.is_rescuer:
         app.RESCUERS[client_uuid] = (client_ip, enc_cipher, dec_cipher, client_nonce)
