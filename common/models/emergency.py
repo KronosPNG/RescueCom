@@ -78,18 +78,20 @@ class Emergency:
         """
 
         def pack_str(s: str):
-            return struct.pack(f"<I{}s".format(len(s)), len(s), s.encode())
+            return struct.pack("<I{}s".format(len(s)), len(s), s.encode())
 
-        return pack_str(self.position) +
-            pack_str(self.address) +
-            pack_str(self.city) +
-            struct.pack("<I", self.street_number) +
-            pack_str(self.place_description) +
-            pack_str(self.photo_b64) +
-            struct.pack("<I", self.severity) +
-            struct.pack("?", self.resolved) +
-            pack_str(self.details_json) +
-            pack_str(str(self.created_at))
+        return (
+            pack_str(self.position)
+            + pack_str(self.address)
+            + pack_str(self.city)
+            + struct.pack("<I", self.street_number)
+            + pack_str(self.place_description)
+            + pack_str(self.photo_b64)
+            + struct.pack("<I", self.severity)
+            + struct.pack("?", self.resolved)
+            + pack_str(self.details_json)
+            + pack_str(str(self.created_at))
+        )
 
     @classmethod
     def unpack(cls: type[Self], emergency_id: int, user_uuid: str, data: bytes) -> Self:
@@ -112,9 +114,13 @@ class Emergency:
         def unpack_str(blob: bytes):
             length = struct.unpack("<I", blob[:4])[0]
             unpacked = struct.unpack("{}s".format(length), blob[4:])
-            return blob[4+length:], unpacked[0].decode()
+            return blob[4 + length :], unpacked[0].decode()
 
-        if not isinstance(emergency_id, int) or not isinstance(user_uuid, str) or not isinstance(data, bytes):
+        if (
+            not isinstance(emergency_id, int)
+            or not isinstance(user_uuid, str)
+            or not isinstance(data, bytes)
+        ):
             raise TypeError("Wrong types for arguments")
 
         try:
@@ -129,20 +135,22 @@ class Emergency:
             blob, details_json = unpack_str(blob)
             blob, created_at_str = unpack_str(blob)
 
-            position = tuple(map(float, position_str.split(',')))
+            position = tuple(map(float, position_str.split(",")))
             created_at = datetime.fromisoformat(created_at_str)
 
-            return Emergency(emergency_id,
-                             user_uuid,
-                             address,
-                             city,
-                             street_number,
-                             severity,
-                             created_at,
-                             resolved,
-                             position,
-                             place_description,
-                             photo_b64,
-                             details_json)
+            return Emergency(
+                emergency_id,
+                user_uuid,
+                address,
+                city,
+                street_number,
+                severity,
+                created_at,
+                resolved,
+                position,
+                place_description,
+                photo_b64,
+                details_json,
+            )
         except Exception as e:
             raise ValueError("Something went wrong:" + str(e))
