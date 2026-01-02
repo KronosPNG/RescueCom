@@ -172,8 +172,8 @@ class DatabaseManager:
         self.conn.execute("BEGIN")
         try:
             # Skip the field `id`
-            vales = emergency.to_db_tuple()[1:]
-            self.conn.execute(insert_query, vales)
+            values = emergency.to_db_tuple()[1:]
+            self.conn.execute(insert_query, values)
             self.conn.commit()
         except self.conn.Error as e:
             self.conn.rollback()
@@ -685,7 +685,7 @@ class DatabaseManager:
             self.conn.rollback()
             raise e
 
-    def update_encyrpted_emergency(
+    def update_encrypted_emergency(
         self,
         user_uuid: str,
         emergency_id: int,
