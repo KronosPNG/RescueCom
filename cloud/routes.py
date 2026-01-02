@@ -1,5 +1,11 @@
+import base64
+import datetime
+
+import requests
 from flask import request, jsonify
 from common.models import enc_emergency, user, db
+from common.models.emergency import Emergency
+from common.services import crypto
 from common.services.crypto import decrypt
 from cloud import persistence
 from cloud.app import app
@@ -72,10 +78,40 @@ def emergency_accept() -> tuple:
 
         persistence.save_encrypted_emergency(encrypted_emergency)
 
+        # Send a message to the rescuee associated with the request
+        user_uuid = encrypted_emergency.user_uuid
+        if user_uuid in app.CLIENTS:
+            client = app.CLIENTS[user_uuid]
+            # Create notification message
+            message = {
+                "type": "emergency_accepted",
+                "emergency_id": encrypted_emergency.emergency_id,
+                "timestamp": datetime.datetime.now().isoformat()
+            }
+
+            # Encrypt the message for the client
+            encrypted_message = crypto.encrypt(
+                client.enc_cipher, client.nonce,
+                str(message).encode(), b""  # No additional authenticated data for now
+            )
+
+            # Send message to the client
+            try:
+                requests.post(
+                    client.ip + "/notification/receive",
+                    json={
+                        "message": base64.b64encode(encrypted_message).decode(),
+                        "sender": "system"
+                    },
+                    timeout=3  # Short timeout to avoid blocking
+                )
+            except Exception as msg_err:
+                # Log the error but continue with the main request
+                app.logger.error(f"Failed to send notification: {str(msg_err)}")
+
         return jsonify({'message': 'Emergency accepted successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
-
 
 @app.route('/emergency/update', methods=['POST'])
 def emergency_update() -> tuple:
