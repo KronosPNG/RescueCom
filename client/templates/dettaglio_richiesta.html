@@ -8,32 +8,32 @@
         <div class="card-body">
 
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <strong>ID: {{ richiesta.id }} | PRIORIT&#193; {{ richiesta.priorita }}</strong>
-                <span class="badge bg-secondary">{{ richiesta.stato }}</span>
+                <strong>ID: {{ request.emergency_id }} | PRIORIT&#193; {{ request.severity }}</strong>
+                <span class="badge bg-secondary">{{ request.resolved }}</span>
             </div>
 
             <h5>Utente</h5>
-            <p>{{ richiesta.utente.nome }} {{ richiesta.utente.cognome }}</p>
+            <p>{{ request.user.name }} {{ request.user.surname }}</p>
 
             <h5>Timestamp</h5>
-            <p>{{ richiesta.timestamp }}</p>
+            <p>{{ request.timestamp }}</p>
 
             <h5>Posizione</h5>
-            <p>{{ richiesta.posizione }}</p>
+            <p>{{ request.address }}</p>
 
             <h5>Descrizione</h5>
-            <p>{{ richiesta.descrizione }}</p>
+            <p>{{ request.description }}</p>
 
             <h5>Data nascita</h5>
-            <p>{{ richiesta.utente.datanascita }}</p>
+            <p>{{ request.user.birthdate }}</p>
 
             <h5>Gruppo Sanguigno</h5>
-            <p>{{ richiesta.utente.grupposanguigno }}</p>
+            <p>{{ request.user.bloodtype }}</p>
 
             <h5>Problematiche</h5>
-            {% if richiesta.utente.problematiche %}
+            {% if request.user.diseases %}
             <ul>
-                {% for problema in richiesta.utente.problematiche %}
+                {% for problema in request.user.diseases %}
                 <li>{{ problema }}</li>
                 {% endfor %}
             </ul>
