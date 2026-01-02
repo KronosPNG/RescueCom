@@ -91,3 +91,69 @@ class EmergencyQueue:
                 return heapq.heappop_max(self.medium_queue)[2]
             case SeverityType.HIGH:
                 return heapq.heappop_max(self.high_queue)[2]
+
+    def update_emergency(
+        self, old_emergency_severity: int, emergency: Emergency | EncryptedEmergency
+    ) -> None:
+        """
+        Updates an existing emergency in the priority queue.
+
+        This method removes a previously queued emergency based on its old
+        severity level and re-inserts the updated emergency into the
+        appropriate priority queue. This allows the emergency to be
+        re-prioritized if its severity or other relevant attributes have
+        changed.
+
+        A linear search is used to locate the existing emergency within the
+        queue, as the internal lists are not sorted.
+
+        Args:
+            old_emergency_severity (int): The previous severity level of the
+                emergency, used to determine which queue currently contains
+                it.
+            emergency (Emergency | EncryptedEmergency): The updated emergency
+                instance to be re-queued.
+
+        Raises:
+            Exception: If the emergency to be updated cannot be found in the
+                queue corresponding to the old severity level.
+        """
+
+        # NOTE: Linear Search is the best in this case because the lists are not
+        # sorted.
+        def linear_search(
+            arr: List, new_emergency: Emergency | EncryptedEmergency
+        ) -> int:
+            index: int = 0
+            for elem in arr:
+                if (elem[2].user_uuid == new_emergency.user_uuid) and (
+                    elem[2].emergency_id == new_emergency.emergency_id
+                ):
+                    return index
+                index += 1
+
+            if index == len(arr):
+                return -1
+
+            return index
+
+        if (old_emergency_severity >= 0) and (old_emergency_severity < 35):
+            pos: int = linear_search(self.low_queue, emergency)
+            if pos == -1:
+                raise ValueError("Old emergency not found")
+
+            self.low_queue.pop(pos)
+        elif (old_emergency_severity >= 35) and (old_emergency_severity < 65):
+            pos: int = linear_search(self.medium_queue, emergency)
+            if pos == -1:
+                raise ValueError("Old emergency not found")
+
+            self.medium_queue.pop(pos)
+        else:
+            pos: int = linear_search(self.high_queue, emergency)
+            if pos == -1:
+                raise ValueError("Old emergency not found")
+
+            self.high_queue.pop(pos)
+
+        self.push_emergency(emergency)
