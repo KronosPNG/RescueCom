@@ -16,6 +16,7 @@ def extract_emergency_fields(data: dict) -> tuple:
     """Extract and validate emergency fields from request data"""
     emergency_id = data.get('emergency_id')
     user_uuid = data.get('user_uuid')
+    severity = data.get('severity')
     routing_info_json = data.get('routing_info_json')
     blob = data.get('blob')
 
@@ -27,6 +28,7 @@ def extract_emergency_fields(data: dict) -> tuple:
     encrypted_emergency = enc_emergency.EncryptedEmergency(
         emergency_id=emergency_id,
         user_uuid=user_uuid,
+        severity=severity,
         routing_info_json=routing_info_json,
         blob=blob
     )
