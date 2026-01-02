@@ -75,7 +75,7 @@ class DatabaseManager:
         );
 
         CREATE TABLE IF NOT EXISTS emergency (
-            emergency_id INTEGER PRIMARY KEY,
+            emergency_id INTEGER NOT NULL,
             user_uuid TEXT NOT NULL,
             position TEXT DEFAULT '0,0',
             address TEXT NOT NULL,
@@ -89,6 +89,7 @@ class DatabaseManager:
             created_at DATE DEFAULT CURRENT_TIMESTAMP,
 
             FOREIGN KEY (user_uuid) REFERENCES user(uuid)
+            PRIMARY KEY (emergency_id, user_uuid)
         );
 
         CREATE TABLE IF NOT EXISTS encrypted_emergency (
@@ -484,7 +485,7 @@ class DatabaseManager:
             SELECT emergency_id, user_uuid, position, address, city, street_number,
             place_description, photo_b64, severity, resolved, details_json, created_at
             FROM emergency
-            WHERE user_uuid = ? AND id = ?
+            WHERE user_uuid = ? AND emergency_id = ?
         """
 
         self.cursor.execute(select_query, (user_uuid, id))
