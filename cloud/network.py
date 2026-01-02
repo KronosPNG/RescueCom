@@ -90,7 +90,7 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
         raise requests.RequestException("Request failed")
 
     # raises KeyError
-    client_pkey_bytes = resp.json["pkey"]
+    client_pkey_bytes = resp.json()["pkey"]
 
     # raises ValueError
     client_pkey = crypto.decode_ecdh_pkey(client_pkey_bytes)
