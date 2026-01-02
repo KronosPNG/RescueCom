@@ -78,17 +78,17 @@ class Emergency:
         """
 
         def pack_str(s: str):
-            return struct.pack(f"<I{}s".format(len(s)), len(s), s.encode())
+            return struct.pack("<I{}s".format(len(s)), len(s), s.encode())
 
-        return pack_str(self.position) +
-            pack_str(self.address) +
-            pack_str(self.city) +
-            struct.pack("<I", self.street_number) +
-            pack_str(self.place_description) +
-            pack_str(self.photo_b64) +
-            struct.pack("<I", self.severity) +
-            struct.pack("?", self.resolved) +
-            pack_str(self.details_json) +
+        return pack_str(self.position) + \
+            pack_str(self.address) + \
+            pack_str(self.city) + \
+            struct.pack("<I", self.street_number) + \
+            pack_str(self.place_description) + \
+            pack_str(self.photo_b64) + \
+            struct.pack("<I", self.severity) + \
+            struct.pack("?", self.resolved) + \
+            pack_str(self.details_json) + \
             pack_str(str(self.created_at))
 
     @classmethod
