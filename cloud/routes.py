@@ -104,7 +104,7 @@ def emergency_delete() -> tuple:
             return jsonify({'error': 'Missing required fields: user_uuid and emergency_id'}), 400
 
         # Delete the emergency from the database
-        persistence.delete_request(user_uuid, emergency_id)
+        persistence.delete_encrypted_emergency(user_uuid, emergency_id)
 
         return jsonify({'message': 'Emergency deleted successfully', 'data': data}), 200
     except Exception as e:
