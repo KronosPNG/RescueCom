@@ -1,5 +1,6 @@
 import base64
 import datetime
+from typing import Optional, Tuple, Dict, Any
 
 import requests
 from flask import request, jsonify
@@ -11,27 +12,28 @@ from cloud import persistence
 from cloud.app import app
 
 
-def get_validated_json() -> tuple:
+def get_validated_json() -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[Any, int]]]:
     """Extract and validate JSON data from request"""
-    data = request.get_json()
+    data: Optional[Dict[str, Any]] = request.get_json()
     if not data:
         return None, (jsonify({'error': 'No JSON data provided'}), 400)
     return data, None
 
 
-def extract_emergency_fields(data: dict) -> tuple:
+def extract_emergency_fields(data: Dict[str, Any]) -> Tuple[
+    Optional[enc_emergency.EncryptedEmergency], Optional[Tuple[Any, int]]]:
     """Extract and validate emergency fields from request data"""
-    emergency_id = data.get('emergency_id')
-    user_uuid = data.get('user_uuid')
-    routing_info_json = data.get('routing_info_json')
-    blob = data.get('blob')
+    emergency_id: Optional[str] = data.get('emergency_id')
+    user_uuid: Optional[str] = data.get('user_uuid')
+    routing_info_json: Optional[str] = data.get('routing_info_json')
+    blob: Optional[bytes] = data.get('blob')
 
     # Validate required fields
     if not emergency_id or not user_uuid:
         return None, (jsonify({'error': 'Missing required fields: emergency_id and user_uuid'}), 400)
 
     # Create EncryptedEmergency instance
-    encrypted_emergency = enc_emergency.EncryptedEmergency(
+    encrypted_emergency: enc_emergency.EncryptedEmergency = enc_emergency.EncryptedEmergency(
         emergency_id=emergency_id,
         user_uuid=user_uuid,
         routing_info_json=routing_info_json,
@@ -42,7 +44,7 @@ def extract_emergency_fields(data: dict) -> tuple:
 
 
 @app.route('/emergency/submit', methods=['POST'])
-def emergency_submit() -> tuple:
+def emergency_submit() -> Tuple[Any, int]:
     """Submit an emergency"""
     try:
         data, error_response = get_validated_json()
@@ -53,10 +55,11 @@ def emergency_submit() -> tuple:
         if error_response:
             return error_response
 
-        client = app.CLIENTS[encrypted_emergency.get('user_uuid')]
-        decrypted_blob = decrypt(client.dec_cipher, client.nonce, blob, b"") # TODO: align with client about aad
-        emergency = Emergency.unpack(encrypted_emergency.emergency_id,
-                                     encrypted_emergency.user_uuid,
+        client: Any = app.CLIENTS[encrypted_emergency.get('user_uuid')]
+        decrypted_blob: bytes = decrypt(client.dec_cipher, client.nonce, data.blob,
+                                        b"")  # TODO: align with client about aad
+        emergency: Emergency = Emergency.unpack(encrypted_emergency.emergency_id,
+                                                encrypted_emergency.user_uuid,
                                      decrypted_blob)
 
         return jsonify({'message': 'Emergency submitted successfully', 'data': data}), 200
@@ -65,7 +68,7 @@ def emergency_submit() -> tuple:
 
 
 @app.route('/emergency/accept', methods=['POST'])
-def emergency_accept() -> tuple:
+def emergency_accept() -> Tuple[Any, int]:
     """Accept an emergency"""
     try:
         data, error_response = get_validated_json()
@@ -79,18 +82,18 @@ def emergency_accept() -> tuple:
         persistence.save_encrypted_emergency(encrypted_emergency)
 
         # Send a message to the rescuee associated with the request
-        user_uuid = encrypted_emergency.user_uuid
+        user_uuid: str = encrypted_emergency.user_uuid
         if user_uuid in app.CLIENTS:
-            client = app.CLIENTS[user_uuid]
+            client: Any = app.CLIENTS[user_uuid]
             # Create notification message
-            message = {
+            message: Dict[str, str] = {
                 "type": "emergency_accepted",
                 "emergency_id": encrypted_emergency.emergency_id,
                 "timestamp": datetime.datetime.now().isoformat()
             }
 
             # Encrypt the message for the client
-            encrypted_message = crypto.encrypt(
+            encrypted_message: bytes = crypto.encrypt(
                 client.enc_cipher, client.nonce,
                 str(message).encode(), b""  # No additional authenticated data for now
             )
@@ -114,7 +117,7 @@ def emergency_accept() -> tuple:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/emergency/update', methods=['POST'])
-def emergency_update() -> tuple:
+def emergency_update() -> Tuple[Any, int]:
     """Update an emergency"""
     try:
         data, error_response = get_validated_json()
@@ -134,7 +137,7 @@ def emergency_update() -> tuple:
 
 
 @app.route('/emergency/delete', methods=['POST'])
-def emergency_delete() -> tuple:
+def emergency_delete() -> Tuple[Any, int]:
     """Delete an emergency"""
     try:
         data, error_response = get_validated_json()
@@ -142,8 +145,8 @@ def emergency_delete() -> tuple:
             return error_response
 
         # Extract fields from request data
-        user_uuid = data.get('user_uuid')
-        emergency_id = data.get('emergency_id')
+        user_uuid: Optional[str] = data.get('user_uuid')
+        emergency_id: Optional[str] = data.get('emergency_id')
 
         # Validate required fields
         if not user_uuid or not emergency_id:
@@ -158,7 +161,7 @@ def emergency_delete() -> tuple:
 
 
 @app.route('/certificate/verify', methods=['POST'])
-def certificate_verify() -> tuple:
+def certificate_verify() -> Tuple[Any, int]:
     """Verify a certificate with nonce and signature"""
     try:
         data, error_response = get_validated_json()
@@ -166,9 +169,9 @@ def certificate_verify() -> tuple:
             return error_response
 
         # Extract fields from request data
-        certificate = data.get('certificate')
-        nonce = data.get('nonce')
-        signature = data.get('signature')
+        certificate: Optional[str] = data.get('certificate')
+        nonce: Optional[str] = data.get('nonce')
+        signature: Optional[str] = data.get('signature')
 
         # Validate required fields
         if not certificate or not nonce or not signature:
@@ -185,14 +188,14 @@ def certificate_verify() -> tuple:
 
 
 @app.route('/publickey/register', methods=['POST'])
-def publickey_register() -> tuple:
+def publickey_register() -> Tuple[Any, int]:
     try:
         data, error_response = get_validated_json()
         if error_response:
             return error_response
 
         # Extract fields from request data
-        public_key = data.get('public_key')
+        public_key: Optional[str] = data.get('public_key')
 
         # Validate required fields
         if not public_key:
@@ -206,7 +209,7 @@ def publickey_register() -> tuple:
 
 
 @app.route('/user/save', methods=['POST'])
-def user_save() -> tuple:
+def user_save() -> Tuple[Any, int]:
     """Save a user"""
     try:
         data, error_response = get_validated_json()
@@ -214,12 +217,12 @@ def user_save() -> tuple:
             return error_response
 
         # Validate required fields
-        required_fields = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
-        missing_fields = [field for field in required_fields if field not in data or data.get(field) is None]
+        required_fields: list[str] = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
+        missing_fields: list[str] = [field for field in required_fields if field not in data or data.get(field) is None]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
-        new_user = user.User(
+        new_user: user.User = user.User(
             uuid=data.get('uuid'),
             is_rescuer=data.get('is_rescuer'),
             name=data.get('name'),
@@ -238,22 +241,22 @@ def user_save() -> tuple:
 
 
 @app.route('/user/update', methods=['POST'])
-def user_update() -> tuple:
+def user_update() -> Tuple[Any, int]:
     """Update a user"""
     try:
         data, error_response = get_validated_json()
         if error_response:
             return error_response
 
-        uuid = data.get('uuid')
+        uuid: Optional[str] = data.get('uuid')
 
         # Validate required fields
-        required_fields = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
-        missing_fields = [field for field in required_fields if field not in data or data.get(field) is None]
+        required_fields: list[str] = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
+        missing_fields: list[str] = [field for field in required_fields if field not in data or data.get(field) is None]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
-        updated_user = user.User(
+        updated_user: user.User = user.User(
             uuid=uuid,
             is_rescuer=data.get('is_rescuer'),
             name=data.get('name'),
@@ -272,14 +275,14 @@ def user_update() -> tuple:
 
 
 @app.route('/user/delete', methods=['POST'])
-def user_delete() -> tuple:
+def user_delete() -> Tuple[Any, int]:
     """Delete a user"""
     try:
         data, error_response = get_validated_json()
         if error_response:
             return error_response
 
-        uuid = data.get('uuid')
+        uuid: Optional[str] = data.get('uuid')
 
         # Validate required fields
         if not uuid:
