@@ -52,12 +52,27 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
             rescuer.busy = True
             break
 
-def sync_new_request():
+
+def sync_new_emergency(
+    queue: emergency_queue.EmergencyQueue,
+    emergency: emergency.Emergency | enc_emergency.EncryptedEmergency,
+) -> None:
     """
-    Synchronise a new emergency to figure out how important and urgent it is relative to known unresolved emergency
+    Synchronizes a new emergency with the priority queue.
+
+    This function adds a newly received emergency to the given
+    `EmergencyQueue` in order to evaluate its priority and urgency relative
+    to other unresolved emergencies already in the queue.
+
+    Args:
+        queue (EmergencyQueue): The emergency priority queue used to manage
+            unresolved emergencies.
+        emergency (Emergency | EncryptedEmergency): The emergency instance to
+            be synchronized and queued.
     """
 
-    pass
+    queue.push_emergency(emergency)
+
 
 def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: bytes):
     """
