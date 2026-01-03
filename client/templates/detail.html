@@ -5,290 +5,85 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dettaglio Emergenza - RescueCom</title>
-    <!-- usage of system fonts -->
+    <!-- Icone Bootstrap -->
     <link rel="stylesheet" href="{{ url_for('static', filename='lib/bootstrap-icons/bootstrap-icons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='lib/leaflet/leaflet.css') }}" />
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --bg-card: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-red: #ef4444;
-            --accent-green: #22c55e;
-            --accent-orange: #f97316;
-            --border-color: #334155;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-primary);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            max-width: 800px;
-            width: 100%;
-            background-color: var(--bg-card);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            padding: 30px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-
-        .title {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .subtitle {
-            color: var(--text-secondary);
-            margin-top: 5px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .section-title {
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-weight: 600;
-            margin-bottom: 10px;
-            margin-top: 20px;
-        }
-
-        .value {
-            font-size: 1.1rem;
-        }
-
-        #mapDetail {
-            height: 300px;
-            width: 100%;
-            border-radius: 8px;
-            margin-top: 10px;
-            z-index: 1;
-            /* Ensure map is below overlay if any */
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: var(--border-color);
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            margin-top: 20px;
-            font-weight: 600;
-        }
-
-        .btn:hover {
-            opacity: 0.9;
-        }
-    </style>
+    <!-- Riutilizzo lo stesso Foglio di stile CSS della Dashboard per coerenza -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <!-- Stile specifico per il dettaglio -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
 </head>
 
 <body>
+
+    <!-- Intestazione condivisa -->
+    <header>
+        <div class="header-right">
+            <a href="/dashboard"
+                style="text-decoration: none; color: white; display: flex; align-items: center; gap: 5px;">
+                <i class="bi bi-arrow-left"></i> Torna alla Dashboard
+            </a>
+        </div>
+    </header>
+
     <div class="container">
-        <div class="header">
+        <div class="header-detail">
             <div>
-                <div class="title" id="reqType">Caricamento...</div>
-                <div class="subtitle" id="reqIdTime">...</div>
+                <h1 style="font-size: 1.8rem; margin: 0; color: #0f172a;">{{ request.emtype }}</h1>
+                <div style="color: #64748b; margin-top: 5px;">ID Richiesta: {{ request.id }}</div>
             </div>
-            <div id="priorityBadge"></div>
+            <!-- Badge Priorità -->
+            <div class="priority-badge bg-{{ request.emscore|lower }}">
+                {{ request.emscore|upper }}
+            </div>
         </div>
 
-        <div class="grid">
+        <div class="info-grid"> <!-- Riutilizzo griglia css dashboard -->
             <div>
                 <div class="section-title">Indirizzo</div>
-                <div class="value" id="reqAddress">-</div>
-                <div class="subtitle" id="reqDesc">-</div>
+                <div class="value">{{ request.emposition }}</div>
+                <div style="margin-top: 5px; color: #64748b;">{{ request.emdescription }}</div>
             </div>
             <div>
                 <div class="section-title">Stato Paziente</div>
-                <div class="value" id="reqUserAndConditions">-</div>
+                <div class="value">
+                    {{ request.name }} {{ request.surname }}<br>
+                    Età: {{ request.age }} • Gruppo: {{ request.bloodtype }}
+                </div>
+                <div style="margin-top: 5px; color: #64748b;">
+                    {% if request.healthinfo.malattie and request.healthinfo.malattie != 'nessuna' %}
+                    Patologie: {{ request.healthinfo.malattie }}
+                    {% else %}
+                    Nessuna patologia nota
+                    {% endif %}
+                </div>
             </div>
         </div>
 
-        <div class="section-title">Mappa Tattica</div>
-        <div id="mapDetail"></div>
-
-        <div class="section-title">Note Aggiuntive</div>
-        <div class="value" style="font-size: 0.95rem; color: var(--text-secondary);">
-            Dati ricevuti dal backend. Verificare sempre la posizione all'arrivo.
+        <div class="section-title">Note Cliniche</div>
+        <div class="value" style="font-size: 0.95rem; line-height: 1.6;">
+            <strong>Allergie:</strong> {{ request.healthinfo.allergie }}<br>
+            <strong>Disabilità:</strong> {{ request.healthinfo.disabilita }}
         </div>
 
-        <div id="photoContainer" style="margin-top: 20px;"></div>
+        {% if request.empicture %}
+        <div style="margin-top: 20px;">
+            <div class="section-title">Media Allegati</div>
+            <img src="{{ request.empicture }}" alt="Scena"
+                style="width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px;">
+        </div>
+        {% endif %}
 
-        <div class="action-bar" style="display: flex; gap: 10px; margin-top: 30px;">
-            <button id="btnContact" class="btn" style="flex: 1; margin-top: 0;">Contatta</button>
-            <a href="#" class="btn"
-                style="flex: 1; margin-top: 0; text-align: center; background-color: var(--border-color);"
-                onclick="window.print(); return false;">Stampa Scheda</a>
+        <div class="action-bar">
+            <!-- Pulsanti finti per demo -->
+            <button class="btn btn-default" onclick="alert('VoIP non disponibile offline')">Contatta</button>
+            <button class="btn btn-default" onclick="window.print();">Stampa Scheda</button>
         </div>
 
-        <div style="margin-top: 10px;">
-            <button id="btnDispatch" class="btn"
-                style="width: 100%; margin-top: 0; background-color: var(--accent-green);">Invia Soccorsi</button>
+        <div style="margin-top: 20px;">
+            <button class="btn btn-success" onclick="alert('Unità inviata')">Invia Soccorsi</button>
         </div>
-
-        <a href="/dashboard" class="btn" style="margin-top: 20px; text-align: center; display: block;">Torna alla
-            Dashboard</a>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="{{ url_for('static', filename='lib/leaflet/leaflet.js') }}"></script>
-
-    <script>
-        // Get Request ID from Flask Template
-        const reqId = "{{ id }}";
-
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log(`[Detail] Initializing view for Request ID: ${reqId}`);
-            loadRequestData(reqId);
-        });
-
-        async function loadRequestData(id) {
-            try {
-                // Try Fetching from Backend
-                const response = await fetch(`/api/requests/${id}`);
-                if (!response.ok) throw new Error("API Offline or Not Found");
-                const data = await response.json();
-                renderDetail(data);
-            } catch (error) {
-                console.warn("Backend non raggiungibile, mostro dati fittizzi per demo.");
-
-                // MOCK DATA FALLBACK (Per visualizzazione richiesta dall'utente)
-                const mockData = {
-                    id: id || 'REQ-DEMO-MOCK',
-                    time: '10:45',
-                    type: 'Incidente Stradale',
-                    priority: 'high',
-                    address: 'Via Roma 10, Salerno',
-                    desc: 'Collisione tra scooter e auto. Conducente scooter cosciente ma dolorante.',
-                    location: { lat: 40.6824, lng: 14.7681 },
-                    user: {
-                        name: 'Mario Rossi',
-                        age: 34,
-                        blood: '0+',
-                        conditions: ['Nessuna']
-                    },
-                    // Placeholder Image (Static dummy asset for offline compatibility)
-                    photo: "{{ url_for('static', filename='img/dummy_accident.png') }}"
-                };
-
-                renderDetail(mockData);
-            }
-        }
-
-        function renderDetail(req) {
-            // 1. Basic Info
-            document.getElementById('reqType').textContent = req.type || 'Emergenza';
-            document.getElementById('reqIdTime').textContent = `ID: ${req.id} • ${req.time || 'Orario Sconosciuto'}`;
-
-            // 2. Priority Badge
-            const badge = document.getElementById('priorityBadge');
-            const priority = req.priority || 'medium';
-            badge.className = `priority-badge priority-${priority}`;
-            badge.style.padding = '5px 10px';
-            badge.style.borderRadius = '6px';
-            badge.style.fontWeight = 'bold';
-            badge.style.textTransform = 'uppercase';
-
-            // Apply colors based on priority (if CSS classes aren't sufficient)
-            const colors = { high: '#ef4444', medium: '#f97316', low: '#22c55e', critical: '#ef4444' };
-            badge.style.backgroundColor = colors[priority] || colors.medium;
-            badge.textContent = priority.toUpperCase();
-
-            // 3. Address & Desc
-            document.getElementById('reqAddress').textContent = req.address || 'Posizione non disponibile';
-            document.getElementById('reqDesc').textContent = req.desc || 'Nessuna descrizione fornita';
-
-            // 4. User Info
-            if (req.user) {
-                const userStr = `${req.user.name || 'Sconosciuto'}, Età: ${req.user.age || 'N/A'}, Gruppo: ${req.user.blood || 'N/A'}`;
-                const condStr = req.user.conditions && req.user.conditions.length ? req.user.conditions.join(', ') : 'Nessuna patologia nota';
-                document.getElementById('reqUserAndConditions').innerHTML = `<strong>${userStr}</strong><br><span class="subtitle">${condStr}</span>`;
-            }
-
-            // 5. Map
-            if (req.location && typeof L !== 'undefined') {
-                const map = L.map('mapDetail').setView([req.location.lat, req.location.lng], 15);
-                L.tileLayer('{{ url_for("static", filename="lib/leaflet/images/marker-icon.png") }}', { // Dummy for local? No, need tile layer.
-                    // Using OSM for tiles even in offline mode logic usually implies having a local tile server or caching. 
-                    // For now, if "offline" means "no external JS/CSS libs", tiles might still be external or need a local MBTiles server.
-                    // I will use OSM Standard for now, assuming "offline" meant libs.
-                    // If strictly offline tiles are needed, that's a bigger task. 
-                    // Current Offline Mode task focused on Libs.
-                });
-                // Revert to standard OSM for tiles if online, or local if setup.
-                // Since I cannot setup a full tile server easily, I will link to OSM but note it.
-                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap'
-                }).addTo(map);
-
-                L.marker([req.location.lat, req.location.lng]).addTo(map)
-                    .bindPopup("Posizione Segnalata")
-                    .openPopup();
-            }
-
-            // 6. Image Visualization
-            const photoContainer = document.getElementById('photoContainer');
-            // Check for direct URL or Base64 content
-            let imgSrc = req.photo;
-            if (!imgSrc && req.photo_b64) {
-                imgSrc = `data:image/jpeg;base64,${req.photo_b64}`;
-            }
-
-            if (imgSrc) {
-                photoContainer.innerHTML = `
-                    <div class="section-title">MEDIA ALLEGATI</div>
-                    <div style="position: relative;">
-                        <img src="${imgSrc}" 
-                             alt="Scena Emergenza" 
-                             style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;"
-                             onclick="window.open(this.src, '_blank')">
-                        <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
-                            <i class="bi bi-zoom-in"></i> Clicca per ingrandire
-                        </div>
-                    </div>`;
-            } else {
-                photoContainer.innerHTML = `<div style="padding: 20px; border-radius: 8px; background: rgba(255,255,255,0.05); text-align: center; color: var(--text-secondary);">Nessuna immagine disponibile</div>`;
-            }
-
-            // 7. Action Bindings
-            const btnContact = document.getElementById('btnContact');
-            if (btnContact) {
-                btnContact.onclick = () => {
-                    alert(`Avvio chiamata VoIP verso: ${req.user?.name || 'Utente'}`);
-                };
-            }
-
-            const btnDispatch = document.getElementById('btnDispatch');
-            if (btnDispatch) {
-                btnDispatch.onclick = () => {
-                    if (confirm("Confermi l'invio dell'unità di soccorso più vicina?")) {
-                        alert("Unità 118 inviata alle coordinate designate.");
-                    }
-                };
-            }
-        }
-    </script>
 </body>
 
 </html>

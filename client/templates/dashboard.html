@@ -4,72 +4,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RescueCom Dashboard</title>
-
+    <title>Ricezione richieste di soccorso - RescueCom</title>
+    <!-- Auto-Refresh ogni 10 secondi per aggiornare le richieste -->
+    <meta http-equiv="refresh" content="10">
+    <!-- Icone Bootstrap -->
     <link rel="stylesheet" href="{{ url_for('static', filename='lib/bootstrap-icons/bootstrap-icons.css') }}">
-
+    <!-- Foglio di stile personalizzato per la dashboard SSR -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 
 <body>
-    <div class="dashboard-container">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <div class="brand">
-                <div class="brand-icon"></div>
-                RescueCom Command
-            </div>
 
-            <div class="header-status">
-                <div class="status-item">
-                    <div class="live-indicator"></div>
-                    System Online
-                </div>
+    <!-- Intestazione (Header) -->
+    <header>
+        <div class="header-right">
+            <a href="#">Passa a Rescuee</a>
+        </div>
+    </header>
 
-                <div class="status-item">
-                    <span class="status-value" id="activeRequestsCount">0</span> Richieste Pendenti
-                </div>
-                <a href="/"
-                    style="color: white; text-decoration: none; font-size: 0.9rem; margin-left: 20px; border: 1px solid #334155; padding: 5px 10px; border-radius: 5px;">Esci</a>
+    <div class="main-container">
+        <!-- Barra Laterale (Sidebar) -->
+        <aside class="sidebar">
+            <div class="sidebar-item active">
+                Ricezione richieste di soccorso
             </div>
-        </header>
-
-        <!-- Sidebar: Feed -->
-        <aside class="request-feed">
-            <div class="feed-header">
-                <span id="feedTitle">Ordine temporale</span>
-                <i class="bi bi-filter-right" style="cursor: pointer;"></i>
-            </div>
-            <div class="feed-list" id="feedList">
-                <!-- Cards injected via JS -->
-            </div>
+            <!-- Modifica dei dati rimosso come richiesto -->
         </aside>
 
-        <!-- Main: Map -->
-        <main class="map-view" id="mapContainer">
-            <div class="map-placeholder-text">
-                <i class="bi bi-geo-alt"></i> Mappa Tattica (Simulazione)
+        <!-- Contenuto Principale -->
+        <main class="content">
+            <h1>Ricezione richieste di soccorso</h1>
+
+            <!-- Macro per renderizzare i dettagli della richiesta dentro l'elemento collassabile -->
+            {% macro render_request_detail(req) %}
+            <div class="req-card">
+                <div class="info-grid">
+                    <div class="info-col">
+                        <h3>Dati utente:</h3>
+                        <div class="info-row"><span class="label">Nome:</span> {{ req.name }}</div>
+                        <div class="info-row"><span class="label">Cognome:</span> {{ req.surname }}</div>
+                        <div class="info-row"><span class="label">Età:</span> {{ req.age }}</div>
+                        <div class="info-row"><span class="label">Allergie:</span> {{ req.healthinfo.allergie }}</div>
+                        <div class="info-row"><span class="label">Disabilità:</span> {{ req.healthinfo.disabilita }}
+                        </div>
+                        <div class="info-row"><span class="label">Malattie:</span> {{ req.healthinfo.malattie }}</div>
+                    </div>
+                    <div class="info-col">
+                        <h3>Situazione rescuee</h3>
+                        <div class="info-row"><span class="label">Sanguinamento:</span> {{ req.emdescription }}</div>
+
+                        <div class="info-row" style="margin-top:15px;">
+                            <span class="label">Allegati:</span><br>
+                            {% if req.empicture %}
+                            <img src="{{ req.empicture }}"
+                                style="width: 80px; height: 80px; object-fit: cover; margin-top: 5px; background: #ddd;">
+                            {% else %}
+                            <div
+                                style="width: 80px; height: 80px; background: #e5e7eb; display:flex; align-items:center; justify-content:center; color:#666; font-size:0.8rem; margin-top:5px;">
+                                IMG/VIDEO</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="info-row" style="margin-top:15px;">
+                            <span class="label">Posizione:</span> {{ req.emposition }}<br>
+                            <span class="label">Descrizione:</span> {{ req.emdescription }}
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <a href="/detail/{{ req.id }}" class="btn-detail">Visualizza Dettagli</a>
+                </div>
             </div>
-            <!-- Markers injected via JS -->
+            {% endmacro %}
+
+            <!-- Sezione: Grave -->
+            <div class="status-section">
+                <!-- Intestazione Sezione Grave -->
+                <h2 style="font-size: 1.4rem; margin-bottom: 15px; display: flex; align-items: center;">
+                    <span class="dot dot-grave"></span> Grave
+                </h2>
+
+                {% for req in groups['grave'] %}
+                <!-- Dettaglio Collassabile -->
+                <details>
+                    <summary>
+                        <div class="summary-content">
+                            <span>{{ req.name }} {{ req.surname }} - {{ req.emtype }}</span>
+                        </div>
+                        <i class="bi bi-caret-down-fill" style="font-size: 0.8rem; color: #666;"></i>
+                    </summary>
+                    {{ render_request_detail(req) }}
+                </details>
+                {% endfor %}
+
+                {% if not groups['grave'] %}
+                <p style="color: #666; font-style: italic; margin-bottom: 20px;">Nessuna emergenza grave.</p>
+                {% endif %}
+            </div>
+
+            <!-- Sezione: Moderato -->
+            <div class="status-section">
+                <h2 style="font-size: 1.4rem; margin-bottom: 15px; display: flex; align-items: center;">
+                    <span class="dot dot-moderato"></span> Moderato
+                </h2>
+                {% for req in groups['moderato'] %}
+                <details>
+                    <summary>
+                        <div class="summary-content">
+                            <span>{{ req.name }} {{ req.surname }} - {{ req.emtype }}</span>
+                        </div>
+                        <i class="bi bi-caret-down-fill" style="font-size: 0.8rem; color: #666;"></i>
+                    </summary>
+                    {{ render_request_detail(req) }}
+                </details>
+                {% endfor %}
+                {% if not groups['moderato'] %}
+                <div style="color: #999; font-style: italic; margin-bottom: 20px;">Nessuna richiesta</div>
+                {% endif %}
+            </div>
+
+            <!-- Sezione: Lieve -->
+            <div class="status-section">
+                <h2 style="font-size: 1.4rem; margin-bottom: 15px; display: flex; align-items: center;">
+                    <span class="dot dot-lieve"></span> Lieve
+                </h2>
+                {% for req in groups['lieve'] %}
+                <details>
+                    <summary>
+                        <div class="summary-content">
+                            <span><strong>{{ req.name }} {{ req.surname }}</strong> - {{ req.emtype }}</span>
+                        </div>
+                        <i class="bi bi-caret-down-fill" style="font-size: 0.8rem; color: #666;"></i>
+                    </summary>
+                    {{ render_request_detail(req) }}
+                </details>
+                {% endfor %}
+                {% if not groups['lieve'] %}
+                <div style="color: #999; font-style: italic; margin-bottom: 20px;">Nessuna richiesta</div>
+                {% endif %}
+            </div>
+
         </main>
-
-        <!-- Right Panel: Details -->
-        <aside class="detail-panel" id="detailPanel">
-            <div
-                style="display: flex; height: 100%; align-items: center; justify-content: center; color: var(--text-secondary); text-align: center;">
-                <div>
-                    <i class="bi bi-cursor" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
-                    Seleziona una richiesta<br>per visualizzare i dettagli
-                </div>
-            </div>
-        </aside>
     </div>
 
-    <!-- Scripts -->
-    <script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-
-    <!-- Leaflet (Local) -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='lib/leaflet/leaflet.css') }}" />
-    <script src="{{ url_for('static', filename='lib/leaflet/leaflet.js') }}"></script>
+</body>
 
 </html>
