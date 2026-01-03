@@ -1,5 +1,4 @@
-from cryptography.hazmat.primitives.serialization.Encoding import X962
-from cryptography.hazmat.primitives.serialization.PublicFormat import CompressedPoint
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.x509 import (
         load_pem_x509_certificate, random_serial_number, Certificate, CertificateBuilder, Name, NameAttribute
 )
@@ -177,7 +176,7 @@ def encode_ecdh_pkey(pkey: EllipticCurvePublicKey) -> bytes:
     if not isinstance(data, EllipticCurvePublicKey):
         raise TypeError("Wrong types for arguments")
 
-    return pkey.public_bytes(X962, CompressedPoint)
+    return pkey.public_bytes(Encoding.X962, PublicFormat.CompressedPoint)
 
 def gen_ecdh_keys() -> tuple[EllipticCurvePrivateKey, EllipticCurvePublicKey]:
     """

@@ -5,12 +5,12 @@ from typing import Optional, Tuple, Dict, Any
 import requests
 from flask import request, jsonify
 
+import cloud
 from cloud.clientDTO import ClientDTO
 from common.models import enc_emergency, user
 from common.models.emergency import Emergency
 from common.services import crypto
-from cloud import persistence
-from cloud.app import app
+from cloud import persistence, app
 
 
 def get_validated_json() -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[Any, int]]]:
@@ -82,7 +82,7 @@ def emergency_submit() -> Tuple[Any, int]:
         if error_response:
             return error_response
 
-        client: ClientDTO = app.CLIENTS[encrypted_emergency.user_uuid]
+        client: ClientDTO = cloud.CLIENTS[encrypted_emergency.user_uuid]
         decrypted_blob: bytes = crypto.decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
         emergency: Emergency = Emergency.unpack(encrypted_emergency.emergency_id,
                                                 encrypted_emergency.user_uuid,
@@ -109,8 +109,8 @@ def emergency_accept() -> Tuple[Any, int]:
 
         # Send a message to the rescuee associated with the request
         user_uuid: str = encrypted_emergency.user_uuid
-        if user_uuid in app.CLIENTS:
-            client: ClientDTO = app.CLIENTS[user_uuid]
+        if user_uuid in cloud.CLIENTS:
+            client: ClientDTO = cloud.CLIENTS[user_uuid]
             # Create notification message
             message: Dict[str, str] = {
                 "type": "emergency_accepted",
