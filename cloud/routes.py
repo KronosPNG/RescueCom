@@ -23,10 +23,11 @@ def get_validated_json() -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[Any, 
 def extract_emergency_fields(data: Dict[str, Any]) -> Tuple[
     Optional[enc_emergency.EncryptedEmergency], Optional[Tuple[Any, int]]]:
     """Extract and validate emergency fields from request data"""
-    emergency_id: Optional[str] = data.get('emergency_id')
+    emergency_id: Optional[int] = data.get('emergency_id')
     user_uuid: Optional[str] = data.get('user_uuid')
     routing_info_json: Optional[str] = data.get('routing_info_json')
     blob: Optional[bytes] = data.get('blob')
+    severity: Optional[int] = data.get('severity')
 
     # Validate required fields
     if not emergency_id or not user_uuid:
@@ -36,6 +37,8 @@ def extract_emergency_fields(data: Dict[str, Any]) -> Tuple[
     encrypted_emergency: enc_emergency.EncryptedEmergency = enc_emergency.EncryptedEmergency(
         emergency_id=emergency_id,
         user_uuid=user_uuid,
+        severity=severity,
+        created_at=datetime.datetime.now(),
         routing_info_json=routing_info_json,
         blob=blob
     )
@@ -55,9 +58,8 @@ def emergency_submit() -> Tuple[Any, int]:
         if error_response:
             return error_response
 
-        client: Any = app.CLIENTS[encrypted_emergency.get('user_uuid')]
-        decrypted_blob: bytes = decrypt(client.dec_cipher, client.nonce, data.blob,
-                                        b"")  # TODO: align with client about aad
+        client: Any = app.CLIENTS[encrypted_emergency.user_uuid]
+        decrypted_blob: bytes = decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
         emergency: Emergency = Emergency.unpack(encrypted_emergency.emergency_id,
                                                 encrypted_emergency.user_uuid,
                                      decrypted_blob)
@@ -146,14 +148,14 @@ def emergency_delete() -> Tuple[Any, int]:
 
         # Extract fields from request data
         user_uuid: Optional[str] = data.get('user_uuid')
-        emergency_id: Optional[str] = data.get('emergency_id')
+        emergency_id: Optional[int] = data.get('emergency_id')
 
         # Validate required fields
         if not user_uuid or not emergency_id:
             return jsonify({'error': 'Missing required fields: user_uuid and emergency_id'}), 400
 
         # Delete the emergency from the database
-        persistence.delete_request(user_uuid, emergency_id)
+        persistence.delete_encrypted_emergency(user_uuid, emergency_id)
 
         return jsonify({'message': 'Emergency deleted successfully', 'data': data}), 200
     except Exception as e:
