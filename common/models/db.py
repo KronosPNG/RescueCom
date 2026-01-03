@@ -166,8 +166,9 @@ class DatabaseManager:
         """
 
         insert_query: str = """
-            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64, severity, resolved, details_json, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64,
+            severity, resolved, emergency_type, description, details_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Begin transaction
@@ -428,7 +429,8 @@ class DatabaseManager:
 
         select_query = """
             SELECT emergency_id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, severity, resolved, details_json, created_at
+            place_description, photo_b64, severity, resolved, emergency_type, description,
+            details_json, created_at
             FROM emergency
         """
 
@@ -450,8 +452,10 @@ class DatabaseManager:
                     photo_b64=row[7],
                     severity=row[8],
                     resolved=row[9] == 1,  # If True the emergency is resolved
-                    details_json=row[10],
-                    created_at=datetime.strptime(row[11], "%Y-%m-%d %H:%M:%S.%f"),
+                    emergency_type=row[10],
+                    description=row[11],
+                    details_json=row[12],
+                    created_at=datetime.strptime(row[13], "%Y-%m-%d %H:%M:%S.%f"),
                 )
             )
 
@@ -485,7 +489,8 @@ class DatabaseManager:
 
         select_query = """
             SELECT emergency_id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, severity, resolved, details_json, created_at
+            place_description, photo_b64, severity, resolved, emergency_type, description,
+            details_json, created_at
             FROM emergency
             WHERE user_uuid = ? AND emergency_id = ?
         """
@@ -507,8 +512,10 @@ class DatabaseManager:
             photo_b64=result[7],
             severity=result[8],
             resolved=result[9] == 1,  # If True the emergency is resolved
-            details_json=result[10],
-            created_at=datetime.strptime(result[11], "%Y-%m-%d %H:%M:%S.%f"),
+            emergency_type=result[10],
+            description=result[11],
+            details_json=result[12],
+            created_at=datetime.strptime(result[13], "%Y-%m-%d %H:%M:%S.%f"),
         )
 
     def get_emergencies_by_user_uuid(self, user_uuid: str) -> List[emergency.Emergency]:
@@ -537,7 +544,8 @@ class DatabaseManager:
 
         select_query = """
             SELECT emergency_id, user_uuid, position, address, city, street_number,
-            place_description, photo_b64, severity, resolved, details_json, created_at
+            place_description, photo_b64, severity, resolved, emergency_type, description,
+            details_json, created_at
             FROM emergency
             WHERE user_uuid = ?
         """
@@ -560,8 +568,10 @@ class DatabaseManager:
                     photo_b64=row[7],
                     severity=row[8],
                     resolved=row[9] == 1,  # If True the emergency is resolved
-                    details_json=row[10],
-                    created_at=datetime.strptime(result[11], "%Y-%m-%d %H:%M:%S.%f"),
+                    emergency_type=row[10],
+                    description=row[11],
+                    details_json=row[12],
+                    created_at=datetime.strptime(row[13], "%Y-%m-%d %H:%M:%S.%f"),
                 )
             )
 
@@ -671,7 +681,7 @@ class DatabaseManager:
             UPDATE emergency
             SET position = ?, address = ?, city = ?, street_number = ?,
             place_description = ?, photo_b64 = ?, severity = ?, resolved = ?,
-            details_json = ?, created_at = ?
+            emergency_type = ?, description = ?, details_json = ?, created_at = ?
             WHERE emergency_id = ? AND user_uuid = ?
         """
 
