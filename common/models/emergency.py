@@ -134,6 +134,7 @@ class Emergency:
         ):
             raise TypeError("Wrong types for arguments")
 
+        blob = data
         try:
             blob, position_str = unpack_str(blob)
             blob, address = unpack_str(blob)
