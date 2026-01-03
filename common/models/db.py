@@ -109,7 +109,7 @@ class DatabaseManager:
                 `user` table before inserting the newly
                 received emergency.
             */
-            FOREIGN KEY (user_uuid) REFERENCES user(uuid),
+            -- FOREIGN KEY (user_uuid) REFERENCES user(uuid),
             PRIMARY KEY (emergency_id, user_uuid)
         );
         """
