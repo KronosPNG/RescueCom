@@ -11,6 +11,8 @@ class Emergency:
         city: str,
         street_number: int,
         severity: int,
+        emergency_type: str,
+        description: str,
         created_at: datetime.datetime,
         resolved: bool = False,
         position: tuple[float, float] = (0.0, 0.0),
@@ -28,6 +30,8 @@ class Emergency:
         self.photo_b64 = photo_b64
         self.severity = severity
         self.resolved = resolved
+        self.emergency_type = emergency_type
+        self.description = description
         self.details_json = details_json
         self.created_at = created_at
 
@@ -51,6 +55,8 @@ class Emergency:
                 - photo_b64 (str): Base64-encoded photo associated with the emergency.
                 - severity (int): The severity score of the emergency.
                 - resolved (bool): Whether the emergency has been resolved.
+                - emergency_type (str): The emergency type.
+                - description (str): A description of the emergency.
                 - details_json (str): Serialized emergency details.
                 - created_at (datetime.datetime): Timestamp indicating when the
                     emergency was created.
@@ -68,6 +74,8 @@ class Emergency:
             self.photo_b64,
             self.severity,
             self.resolved,
+            self.emergency_type,
+            self.description,
             self.details_json,
             self.created_at,
         )

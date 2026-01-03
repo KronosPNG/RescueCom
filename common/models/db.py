@@ -85,6 +85,8 @@ class DatabaseManager:
             photo_b64 TEXT,
             severity INTEGER NOT NULL,
             resolved INTEGER NOT NULL,
+            emergency_type TEXT NOT NULL,
+            description TEXT NOT NULL,
             details_json TEXT,
             created_at DATE DEFAULT CURRENT_TIMESTAMP,
 
