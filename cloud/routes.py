@@ -4,6 +4,8 @@ from typing import Optional, Tuple, Dict, Any
 
 import requests
 from flask import request, jsonify
+
+from cloud.clientDTO import ClientDTO
 from common.models import enc_emergency, user, db
 from common.models.emergency import Emergency
 from common.services import crypto
@@ -58,8 +60,8 @@ def emergency_submit() -> Tuple[Any, int]:
         if error_response:
             return error_response
 
-        client: Any = app.CLIENTS[encrypted_emergency.user_uuid]
-        decrypted_blob: bytes = decrypt(client.dec_cipher, client.cloud_nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
+        client: ClientDTO = app.CLIENTS[encrypted_emergency.user_uuid]
+        decrypted_blob: bytes = decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
         emergency: Emergency = Emergency.unpack(encrypted_emergency.emergency_id,
                                                 encrypted_emergency.user_uuid,
                                      decrypted_blob)
@@ -86,7 +88,7 @@ def emergency_accept() -> Tuple[Any, int]:
         # Send a message to the rescuee associated with the request
         user_uuid: str = encrypted_emergency.user_uuid
         if user_uuid in app.CLIENTS:
-            client: Any = app.CLIENTS[user_uuid]
+            client: ClientDTO = app.CLIENTS[user_uuid]
             # Create notification message
             message: Dict[str, str] = {
                 "type": "emergency_accepted",
@@ -96,7 +98,7 @@ def emergency_accept() -> Tuple[Any, int]:
 
             # Encrypt the message for the client
             encrypted_message: bytes = crypto.encrypt(
-                enc, client.nonce,
+                encrypted_emergency, client.cloud_nonce,
                 str(message).encode(), b""  # No additional authenticated data for now
             )
 
