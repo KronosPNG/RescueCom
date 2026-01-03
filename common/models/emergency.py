@@ -97,6 +97,8 @@ class Emergency:
             + pack_str(self.photo_b64)
             + struct.pack("<I", self.severity)
             + struct.pack("?", self.resolved)
+            + pack_str(self.emergency_type)
+            + pack_str(self.description)
             + pack_str(self.details_json)
             + pack_str(str(self.created_at))
         )
