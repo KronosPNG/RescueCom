@@ -6,10 +6,9 @@ import requests
 from flask import request, jsonify
 
 from cloud.clientDTO import ClientDTO
-from common.models import enc_emergency, user, db
+from common.models import enc_emergency, user
 from common.models.emergency import Emergency
 from common.services import crypto
-from common.services.crypto import decrypt
 from cloud import persistence
 from cloud.app import app
 
@@ -48,6 +47,29 @@ def extract_emergency_fields(data: Dict[str, Any]) -> Tuple[
     return encrypted_emergency, None
 
 
+def create_user_from_data(data: Dict[str, Any]) -> Tuple[Optional[user.User], Optional[Tuple[Any, int]]]:
+    """Extract and validate user fields from request data"""
+    # Validate required fields
+    required_fields: list[str] = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
+    missing_fields: list[str] = [field for field in required_fields if field not in data or data.get(field) is None]
+    if missing_fields:
+        return None, (jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400)
+
+    try:
+        new_user: user.User = user.User(
+            uuid=data.get('uuid'),
+            is_rescuer=data.get('is_rescuer'),
+            name=data.get('name'),
+            surname=data.get('surname'),
+            birthday=data.get('birthday'),
+            blood_type=data.get('blood_type'),
+            health_info_json=data.get('health_info_json')
+        )
+        return new_user, None
+    except (ValueError, TypeError) as e:
+        return None, (jsonify({'error': f'Invalid data format: {str(e)}'}), 400)
+
+
 @app.route('/emergency/submit', methods=['POST'])
 def emergency_submit() -> Tuple[Any, int]:
     """Submit an emergency"""
@@ -61,7 +83,7 @@ def emergency_submit() -> Tuple[Any, int]:
             return error_response
 
         client: ClientDTO = app.CLIENTS[encrypted_emergency.user_uuid]
-        decrypted_blob: bytes = decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
+        decrypted_blob: bytes = crypto.decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
         emergency: Emergency = Emergency.unpack(encrypted_emergency.emergency_id,
                                                 encrypted_emergency.user_uuid,
                                      decrypted_blob)
@@ -219,26 +241,12 @@ def user_save() -> Tuple[Any, int]:
         if error_response:
             return error_response
 
-        # Validate required fields
-        required_fields: list[str] = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
-        missing_fields: list[str] = [field for field in required_fields if field not in data or data.get(field) is None]
-        if missing_fields:
-            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
-
-        new_user: user.User = user.User(
-            uuid=data.get('uuid'),
-            is_rescuer=data.get('is_rescuer'),
-            name=data.get('name'),
-            surname=data.get('surname'),
-            birthday=data.get('birthday'),
-            blood_type=data.get('blood_type'),
-            health_info_json=data.get('health_info_json')
-        )
+        new_user, error_response = create_user_from_data(data)
+        if error_response:
+            return error_response
 
         persistence.save_user(new_user)
         return jsonify({'message': 'User saved successfully', 'data': data}), 200
-    except (ValueError, TypeError) as e:
-        return jsonify({'error': f'Invalid data format: {str(e)}'}), 400
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
@@ -251,28 +259,12 @@ def user_update() -> Tuple[Any, int]:
         if error_response:
             return error_response
 
-        uuid: Optional[str] = data.get('uuid')
+        updated_user, error_response = create_user_from_data(data)
+        if error_response:
+            return error_response
 
-        # Validate required fields
-        required_fields: list[str] = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
-        missing_fields: list[str] = [field for field in required_fields if field not in data or data.get(field) is None]
-        if missing_fields:
-            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
-
-        updated_user: user.User = user.User(
-            uuid=uuid,
-            is_rescuer=data.get('is_rescuer'),
-            name=data.get('name'),
-            surname=data.get('surname'),
-            birthday=data.get('birthday'),
-            blood_type=data.get('blood_type'),
-            health_info_json=data.get('health_info_json')
-        )
-
-        persistence.update_user(uuid, updated_user)
+        persistence.update_user(updated_user.uuid, updated_user)
         return jsonify({'message': 'User updated successfully', 'data': data}), 200
-    except (ValueError, TypeError) as e:
-        return jsonify({'error': f'Invalid data format: {str(e)}'}), 400
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
