@@ -147,22 +147,24 @@ class Emergency:
             blob, details_json = unpack_str(blob)
             blob, created_at_str = unpack_str(blob)
 
-            position = tuple(map(float, position_str.split(",")))
-            created_at = datetime.fromisoformat(created_at_str)
+            position = tuple(position_str.split(","))
+            created_at = datetime.datetime.fromisoformat(created_at_str)
 
-            return Emergency(
-                emergency_id,
-                user_uuid,
-                address,
-                city,
-                street_number,
-                severity,
-                created_at,
-                resolved,
-                position,
-                place_description,
-                photo_b64,
-                details_json,
+            return cls(
+                emergency_id=emergency_id,
+                user_uuid=user_uuid,
+                position=position,
+                address=address,
+                city=city,
+                street_number=street_number,
+                place_description=place_description,
+                photo_b64=photo_b64,
+                severity=severity,
+                resolved=resolved,
+                emergency_type="",
+                description="",
+                details_json=details_json,
+                created_at=created_at,
             )
         except Exception as e:
             raise ValueError("Something went wrong:" + str(e))
