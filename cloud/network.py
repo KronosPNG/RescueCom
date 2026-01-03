@@ -5,6 +5,8 @@ from pathlib import Path
 
 import app
 import requests
+
+from cloud import clientDTO
 # from clientDTO import ClientDTO
 
 from common.models import db, emergency, enc_emergency
@@ -119,9 +121,9 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
 
     enc_cipher, dec_cipher = crypto.get_ciphers(key)
 
-    app.CLIENTS[client_uuid] = (client_ip, enc_cipher, dec_cipher, client_nonce)
+    app.CLIENTS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, False)
 
     user = db.DatabaseManager.get_instance().get_user_by_uuid(str(client_uuid))
 
     if user is not None and user.is_rescuer:
-        app.RESCUERS[client_uuid] = (client_ip, enc_cipher, dec_cipher, client_nonce)
+        app.RESCUERS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, True)

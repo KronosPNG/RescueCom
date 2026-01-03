@@ -59,7 +59,7 @@ def emergency_submit() -> Tuple[Any, int]:
             return error_response
 
         client: Any = app.CLIENTS[encrypted_emergency.user_uuid]
-        decrypted_blob: bytes = decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
+        decrypted_blob: bytes = decrypt(client.dec_cipher, client.cloud_nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
         emergency: Emergency = Emergency.unpack(encrypted_emergency.emergency_id,
                                                 encrypted_emergency.user_uuid,
                                      decrypted_blob)
@@ -96,7 +96,7 @@ def emergency_accept() -> Tuple[Any, int]:
 
             # Encrypt the message for the client
             encrypted_message: bytes = crypto.encrypt(
-                client.enc_cipher, client.nonce,
+                enc, client.nonce,
                 str(message).encode(), b""  # No additional authenticated data for now
             )
 
@@ -106,7 +106,6 @@ def emergency_accept() -> Tuple[Any, int]:
                     client.ip + "/notification/receive",
                     json={
                         "message": base64.b64encode(encrypted_message).decode(),
-                        "sender": "system"
                     },
                     timeout=3  # Short timeout to avoid blocking
                 )
