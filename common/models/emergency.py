@@ -89,7 +89,7 @@ class Emergency:
             return struct.pack("<I{}s".format(len(s)), len(s), s.encode())
 
         return (
-            pack_str(self.position)
+            pack_str(f"{self.position[0]},{self.position[1]}")
             + pack_str(self.address)
             + pack_str(self.city)
             + struct.pack("<I", self.street_number)
