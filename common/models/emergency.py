@@ -1,5 +1,6 @@
 from typing import Self
-import datetime, struct
+import datetime
+import struct
 
 
 class Emergency:
