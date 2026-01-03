@@ -3,7 +3,7 @@ import os
 import uuid
 from pathlib import Path
 
-import app
+import cloud
 import requests
 
 from cloud import clientDTO
@@ -24,7 +24,7 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
         emergency (Emergency): emergency to send to Rescuers
     """
 
-    for rescuer in app.RESCUERS.values():
+    for rescuer in cloud.RESCUERS.values():
         if rescuer.busy:
             continue
 
@@ -121,9 +121,9 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
 
     enc_cipher, dec_cipher = crypto.get_ciphers(key)
 
-    app.CLIENTS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, False)
+    cloud.CLIENTS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, False)
 
     user = db.DatabaseManager.get_instance().get_user_by_uuid(str(client_uuid))
 
     if user is not None and user.is_rescuer:
-        app.RESCUERS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, True)
+        cloud.RESCUERS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, True)
