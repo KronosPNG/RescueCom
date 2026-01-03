@@ -144,6 +144,8 @@ class Emergency:
             blob, photo_b64 = unpack_str(blob)
             blob, severity = blob[4:], struct.unpack("<I", blob)[0]
             blob, resolved = blob[1:], struct.unpack("?", blob)[0]
+            blob, emergency_type = unpack_str(blob)
+            blob, description = unpack_str(blob)
             blob, details_json = unpack_str(blob)
             blob, created_at_str = unpack_str(blob)
 
@@ -161,8 +163,8 @@ class Emergency:
                 photo_b64=photo_b64,
                 severity=severity,
                 resolved=resolved,
-                emergency_type="",
-                description="",
+                emergency_type=emergency_type,
+                description=description,
                 details_json=details_json,
                 created_at=created_at,
             )
