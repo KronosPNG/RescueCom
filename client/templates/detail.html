@@ -15,6 +15,31 @@
 
 <body>
 
+    <!-- Logica di caricamento dati robusta: Supporta sia 'req' che 'request' e fallback su Demo -->
+    <!-- Logica di init dati (Flat Scope per evitare bug di variabili locali) -->
+    <!-- 1. Fallback Layout Vuoto -->
+    {% set fallback_data = {
+    'id': '', 'emtype': '', 'emscore': '', 'emposition': '', 'emdescription': '',
+    'name': '', 'surname': '', 'age': '', 'bloodtype': '',
+    'healthinfo': {'malattie': '', 'allergie': '', 'disabilita': ''},
+    'empicture': ''
+    } %}
+
+    <!-- 2. Rilevamento dati da oggetto 'request' (vecchio viewer) -->
+    {% set legacy_data = request if (request is defined and request.healthinfo is defined) else fallback_data %}
+
+    <!-- 3. Selezione finale: 'req' (se passato) o legacy/fallback -->
+    {% set req = req if (req is defined and req is not none) else legacy_data %}
+
+    <style>
+        .priority-badge.bg- {
+            display: none;
+        }
+
+        /* Nasconde badge vuoto */
+    </style>
+
+
     <!-- Intestazione condivisa -->
     <header>
         <div class="header-right">
@@ -28,30 +53,30 @@
     <div class="container">
         <div class="header-detail">
             <div>
-                <h1 style="font-size: 1.8rem; margin: 0; color: #0f172a;">{{ request.emtype }}</h1>
-                <div style="color: #64748b; margin-top: 5px;">ID Richiesta: {{ request.id }}</div>
+                <h1 style="font-size: 1.8rem; margin: 0; color: #0f172a;">{{ req.emtype }}</h1>
+                <div style="color: #64748b; margin-top: 5px;">ID Richiesta: {{ req.id }}</div>
             </div>
             <!-- Badge Priorità -->
-            <div class="priority-badge bg-{{ request.emscore|lower }}">
-                {{ request.emscore|upper }}
+            <div class="priority-badge bg-{{ req.emscore|lower }}">
+                {{ req.emscore|upper }}
             </div>
         </div>
 
         <div class="info-grid"> <!-- Riutilizzo griglia css dashboard -->
             <div>
                 <div class="section-title">Indirizzo</div>
-                <div class="value">{{ request.emposition }}</div>
-                <div style="margin-top: 5px; color: #64748b;">{{ request.emdescription }}</div>
+                <div class="value">{{ req.emposition }}</div>
+                <div style="margin-top: 5px; color: #64748b;">{{ req.emdescription }}</div>
             </div>
             <div>
                 <div class="section-title">Stato Paziente</div>
                 <div class="value">
-                    {{ request.name }} {{ request.surname }}<br>
-                    Età: {{ request.age }} • Gruppo: {{ request.bloodtype }}
+                    {{ req.name }} {{ req.surname }}<br>
+                    Età: {{ req.age }} • Gruppo: {{ req.bloodtype }}
                 </div>
                 <div style="margin-top: 5px; color: #64748b;">
-                    {% if request.healthinfo.malattie and request.healthinfo.malattie != 'nessuna' %}
-                    Patologie: {{ request.healthinfo.malattie }}
+                    {% if req.healthinfo.malattie and req.healthinfo.malattie != 'nessuna' %}
+                    Patologie: {{ req.healthinfo.malattie }}
                     {% else %}
                     Nessuna patologia nota
                     {% endif %}
@@ -61,14 +86,14 @@
 
         <div class="section-title">Note Cliniche</div>
         <div class="value" style="font-size: 0.95rem; line-height: 1.6;">
-            <strong>Allergie:</strong> {{ request.healthinfo.allergie }}<br>
-            <strong>Disabilità:</strong> {{ request.healthinfo.disabilita }}
+            <strong>Allergie:</strong> {{ req.healthinfo.allergie }}<br>
+            <strong>Disabilità:</strong> {{ req.healthinfo.disabilita }}
         </div>
 
-        {% if request.empicture %}
+        {% if req.empicture %}
         <div style="margin-top: 20px;">
             <div class="section-title">Media Allegati</div>
-            <img src="{{ request.empicture }}" alt="Scena"
+            <img src="{{ req.empicture }}" alt="Scena"
                 style="width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px;">
         </div>
         {% endif %}

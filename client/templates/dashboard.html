@@ -5,8 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ricezione richieste di soccorso - RescueCom</title>
-    <!-- Auto-Refresh ogni 10 secondi per aggiornare le richieste -->
-    <meta http-equiv="refresh" content="10">
     <!-- Icone Bootstrap -->
     <link rel="stylesheet" href="{{ url_for('static', filename='lib/bootstrap-icons/bootstrap-icons.css') }}">
     <!-- Foglio di stile personalizzato per la dashboard SSR -->
@@ -33,6 +31,11 @@
 
         <!-- Contenuto Principale -->
         <main class="content">
+            <!-- Fallback vuoto se non ci sono dati: Non rompe la pagina, mostra liste vuote -->
+            {% if groups is undefined or not groups %}
+            {% set groups = {'grave': [], 'moderato': [], 'lieve': []} %}
+            {% endif %}
+
             <h1>Ricezione richieste di soccorso</h1>
 
             <!-- Macro per renderizzare i dettagli della richiesta dentro l'elemento collassabile -->
