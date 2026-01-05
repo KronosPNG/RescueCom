@@ -1,5 +1,6 @@
 from typing import Self
-import datetime, struct
+import datetime
+import struct
 
 
 class Emergency:
@@ -7,11 +8,13 @@ class Emergency:
         self,
         emergency_id: int,
         user_uuid: str,
-        address: str,
-        city: str,
-        street_number: int,
         severity: int,
+        emergency_type: str,
+        description: str,
         created_at: datetime.datetime,
+        address: str = "",
+        city: str = "",
+        street_number: int = -1,
         resolved: bool = False,
         position: tuple[float, float] = (0.0, 0.0),
         place_description: str = "",
@@ -28,6 +31,8 @@ class Emergency:
         self.photo_b64 = photo_b64
         self.severity = severity
         self.resolved = resolved
+        self.emergency_type = emergency_type
+        self.description = description
         self.details_json = details_json
         self.created_at = created_at
 
@@ -51,6 +56,8 @@ class Emergency:
                 - photo_b64 (str): Base64-encoded photo associated with the emergency.
                 - severity (int): The severity score of the emergency.
                 - resolved (bool): Whether the emergency has been resolved.
+                - emergency_type (str): The emergency type.
+                - description (str): A description of the emergency.
                 - details_json (str): Serialized emergency details.
                 - created_at (datetime.datetime): Timestamp indicating when the
                     emergency was created.
@@ -68,6 +75,8 @@ class Emergency:
             self.photo_b64,
             self.severity,
             self.resolved,
+            self.emergency_type,
+            self.description,
             self.details_json,
             self.created_at,
         )
@@ -81,7 +90,7 @@ class Emergency:
             return struct.pack("<I{}s".format(len(s)), len(s), s.encode())
 
         return (
-            pack_str(self.position)
+            pack_str(f"{self.position[0]},{self.position[1]}")
             + pack_str(self.address)
             + pack_str(self.city)
             + struct.pack("<I", self.street_number)
@@ -89,6 +98,8 @@ class Emergency:
             + pack_str(self.photo_b64)
             + struct.pack("<I", self.severity)
             + struct.pack("?", self.resolved)
+            + pack_str(self.emergency_type)
+            + pack_str(self.description)
             + pack_str(self.details_json)
             + pack_str(str(self.created_at))
         )
@@ -123,6 +134,7 @@ class Emergency:
         ):
             raise TypeError("Wrong types for arguments")
 
+        blob = data
         try:
             blob, position_str = unpack_str(blob)
             blob, address = unpack_str(blob)
@@ -132,25 +144,29 @@ class Emergency:
             blob, photo_b64 = unpack_str(blob)
             blob, severity = blob[4:], struct.unpack("<I", blob)[0]
             blob, resolved = blob[1:], struct.unpack("?", blob)[0]
+            blob, emergency_type = unpack_str(blob)
+            blob, description = unpack_str(blob)
             blob, details_json = unpack_str(blob)
             blob, created_at_str = unpack_str(blob)
 
-            position = tuple(map(float, position_str.split(",")))
-            created_at = datetime.fromisoformat(created_at_str)
+            position = tuple(position_str.split(","))
+            created_at = datetime.datetime.fromisoformat(created_at_str)
 
-            return Emergency(
-                emergency_id,
-                user_uuid,
-                address,
-                city,
-                street_number,
-                severity,
-                created_at,
-                resolved,
-                position,
-                place_description,
-                photo_b64,
-                details_json,
+            return cls(
+                emergency_id=emergency_id,
+                user_uuid=user_uuid,
+                position=position,
+                address=address,
+                city=city,
+                street_number=street_number,
+                place_description=place_description,
+                photo_b64=photo_b64,
+                severity=severity,
+                resolved=resolved,
+                emergency_type=emergency_type,
+                description=description,
+                details_json=details_json,
+                created_at=created_at,
             )
         except Exception as e:
             raise ValueError("Something went wrong:" + str(e))
