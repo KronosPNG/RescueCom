@@ -1,4 +1,4 @@
-from ..common.models import db, enc_emergency, user, emergency
+from common.models import db, enc_emergency, user, emergency
 
 
 def save_user(user: user.User) -> None:
