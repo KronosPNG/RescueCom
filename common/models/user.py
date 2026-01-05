@@ -14,15 +14,6 @@ class BloodType(Enum):
 
 
 class User:
-    uuid: str
-    is_rescuer: bool
-    name: str
-    surname: str
-    birthday: datetime.date
-    blood_type: BloodType
-    # TODO: could be a new table
-    health_info_json: str
-
     def __init__(
         self,
         uuid: str,
