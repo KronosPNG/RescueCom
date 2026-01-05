@@ -124,8 +124,8 @@ class Emergency:
 
         def unpack_str(blob: bytes):
             length = struct.unpack("<I", blob[:4])[0]
-            unpacked = struct.unpack("{}s".format(length), blob[4:])
-            return blob[4 + length :], unpacked[0].decode()
+            unpacked = struct.unpack("{}s".format(length), blob[4:4 + length])
+            return blob[4 + length:], unpacked[0].decode()
 
         if (
             not isinstance(emergency_id, int)
@@ -139,11 +139,11 @@ class Emergency:
             blob, position_str = unpack_str(blob)
             blob, address = unpack_str(blob)
             blob, city = unpack_str(blob)
-            blob, street_number = blob[4:], struct.unpack("<I", blob)[0]
+            blob, street_number = blob[4:], struct.unpack("<I", blob[:4])[0]
             blob, place_description = unpack_str(blob)
             blob, photo_b64 = unpack_str(blob)
-            blob, severity = blob[4:], struct.unpack("<I", blob)[0]
-            blob, resolved = blob[1:], struct.unpack("?", blob)[0]
+            blob, severity = blob[4:], struct.unpack("<I", blob[:4])[0]
+            blob, resolved = blob[1:], struct.unpack("?", blob[:1])[0]
             blob, emergency_type = unpack_str(blob)
             blob, description = unpack_str(blob)
             blob, details_json = unpack_str(blob)
