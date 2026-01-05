@@ -1,4 +1,4 @@
-from common.models import db, enc_emergency, user
+from ..common.models import db, enc_emergency, user, emergency
 
 
 def save_user(user: user.User) -> None:
@@ -105,7 +105,7 @@ def update_encrypted_emergency(
     """
 
     dbm = db.DatabaseManager.get_instance()
-    dbm.update_encyrpted_emergency(user_uuid, emergency_id, enc_emergency)
+    dbm.update_encrypted_emergency(user_uuid, emergency_id, enc_emergency)
 
 
 def delete_encrypted_emergency(user_uuid: str, emergency_id: int):
