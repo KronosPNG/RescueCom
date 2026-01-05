@@ -7,13 +7,11 @@ import cloud
 import requests
 
 from cloud import clientDTO
-# from clientDTO import ClientDTO
 
 from common.models import db, emergency, enc_emergency
 from common.services import crypto, emergency_queue
 
-# TODO: do better
-CERTIFICATE_PATH = os.getenv("CERTIFICATE_PATH", "./certificates/cert.pem")
+CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)).join(Path(os.getenv("CERTIFICATE_NAME", None)))
 
 
 def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
@@ -86,12 +84,16 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
         client_nonce (bytes): client's nonce for the session
     Raises:
         TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
     """
 
     if not isinstance(client_ip, str) or not isinstance(client_nonce, bytes):
         raise TypeError("Wrong types for arguments")
 
-    certificate = crypto.load_certificate(Path(CERTIFICATE_PATH))
+    if CERTIFICATE_PATH.exists():
+        certificate = crypto.load_certificate(CERTIFICATE_PATH)
+    else:
+        certificate = crypto.gen_certificate("Italia", "Salerno", "cloud", 30)
 
     nonce = os.urandom(12)
 
@@ -103,6 +105,7 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
         client_ip + "/certificate/verify",
         json={"certificate": certificate, "nonce": nonce, "signature": signature},
     )
+
     if not resp.ok:
         raise requests.RequestException("Request failed")
 
@@ -116,6 +119,8 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
     resp = requests.post(
         client_ip + "/publickey/register", json={"public_key": encoded_pkey}
     )
+    if not resp.ok:
+        raise requests.RequestException("Request failed")
 
     key = crypto.derive_shared_key(skey, client_pkey)
 
@@ -127,3 +132,6 @@ def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: b
 
     if user is not None and user.is_rescuer:
         cloud.RESCUERS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, True)
+
+    # raises Exception
+    crypto.save_certificate(CERTIFICATE_PATH, certificate)
