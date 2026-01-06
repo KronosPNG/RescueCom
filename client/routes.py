@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
 from flask import request, jsonify, Response
 
-from client.__init__ import app
+from client import app
 from common.models.emergency import Emergency
 from common.services import crypto
 
@@ -14,23 +14,23 @@ JsonResponse = Tuple[Response, int]
 ValidationResult = Tuple[Optional[Dict[str, Any]], Optional[JsonResponse]]
 
 # Client state (should be initialized during app setup)
-_dec_cipher: Optional[AESGCMSIV] = None
-_nonce: Optional[bytes] = None
+_DEC_CIPHER: Optional[AESGCMSIV] = None
+_NONCE: Optional[bytes] = None
 
 # Notification handlers registry
-_notification_handlers: Dict[str, Callable[[Dict[str, Any]], None]] = {}
+_NOTIFICATION_HANDLERS: Dict[str, Callable[[Dict[str, Any]], None]] = {}
 
 
 def init_client_crypto(dec_cipher: AESGCMSIV, nonce: bytes) -> None:
     """Initialize the client's cryptographic state."""
-    global _dec_cipher, _nonce
-    _dec_cipher = dec_cipher
-    _nonce = nonce
+    global _DEC_CIPHER, _NONCE
+    _DEC_CIPHER = dec_cipher
+    _NONCE = nonce
 
 
 def register_notification_handler(notification_type: str, handler: Callable[[Dict[str, Any]], None]) -> None:
     """Register a handler for a specific notification type."""
-    _notification_handlers[notification_type] = handler
+    _NOTIFICATION_HANDLERS[notification_type] = handler
 
 
 # --- Validation Helpers (DRY) ---
@@ -56,12 +56,12 @@ def validate_required_fields(data: Dict[str, Any], required_fields: list[str]) -
 
 def decrypt_message(encrypted_b64: str) -> Tuple[Optional[Dict[str, Any]], Optional[JsonResponse]]:
     """Decrypt a base64-encoded encrypted message."""
-    if _dec_cipher is None or _nonce is None:
+    if _DEC_CIPHER is None or _NONCE is None:
         return None, (jsonify({'error': 'Client crypto not initialized'}), 500)
 
     try:
         encrypted_bytes: bytes = base64.b64decode(encrypted_b64)
-        decrypted_bytes: bytes = crypto.decrypt(_dec_cipher, _nonce, encrypted_bytes, b"")
+        decrypted_bytes: bytes = crypto.decrypt(_DEC_CIPHER, _NONCE, encrypted_bytes, b"")
         message_data: Dict[str, Any] = json.loads(decrypted_bytes.decode('utf-8'))
         return message_data, None
     except (ValueError, json.JSONDecodeError) as e:
@@ -150,7 +150,7 @@ def notification_receive() -> JsonResponse:
     if not notification_type:
         return create_error_response('Missing notification type', 400)
 
-    handler: Optional[Callable[[Dict[str, Any]], None]] = _notification_handlers.get(notification_type)
+    handler: Optional[Callable[[Dict[str, Any]], None]] = _NOTIFICATION_HANDLERS.get(notification_type)
     if handler:
         handler(message_data)
     else:
@@ -176,12 +176,12 @@ def emergency_receive() -> JsonResponse:
     encrypted_blob_b64: str = data['blob']
     severity: Optional[int] = data.get('severity')
 
-    if _dec_cipher is None or _nonce is None:
+    if _DEC_CIPHER is None or _NONCE is None:
         return create_error_response('Client crypto not initialized')
 
     try:
         encrypted_blob: bytes = base64.b64decode(encrypted_blob_b64)
-        decrypted_blob: bytes = crypto.decrypt(_dec_cipher, _nonce, encrypted_blob, b"")
+        decrypted_blob: bytes = crypto.decrypt(_DEC_CIPHER, _NONCE, encrypted_blob, b"")
         emergency: Emergency = Emergency.unpack(emergency_id, user_uuid, decrypted_blob)
 
         return create_success_response('Emergency received', {
