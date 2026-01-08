@@ -1,8 +1,11 @@
 import base64
 import datetime
-from typing import Optional, Tuple, Dict, Any
-
+import os
 import requests
+
+from pathlib import Path
+
+from typing import Optional, Tuple, Dict, Any
 from flask import request, jsonify
 
 import cloud
@@ -11,6 +14,11 @@ from common.models import enc_emergency, user
 from common.models.emergency import Emergency
 from common.services import crypto
 from cloud import persistence, app
+
+
+CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("CERTIFICATE_NAME", None))
+SIGNING_KEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("SIGNING_KEY_NAME", None))
+
 
 
 def get_validated_json() -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[Any, int]]]:
@@ -285,5 +293,67 @@ def user_delete() -> Tuple[Any, int]:
 
         persistence.delete_user(uuid)
         return jsonify({'message': 'User deleted successfully', 'uuid': uuid}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@app.route('/connect', methods=['POST'])
+def connect() -> Tuple[Any, int]:
+    """Connect with a client"""
+    try:
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
+
+        uuid: Optional[str] = data.get('uuid')
+        cert_bytes: Optional[bytes] = data.get('certificate')
+        client_nonce: Optional[bytes] = data.get('nonce')
+        signature: Optional[str] = data.get('signature')
+
+        # Validate required fields
+        if not uuid or not cert_bytes or not client_nonce or not signature:
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        client_certificate = crypto.decode_certificate(cert_bytes)
+        if not crypto.verify_certificate(client_certificate, signature, client_nonce):
+            return jsonify({'error': 'Couldn\'t verify certificate or signature'}), 400
+
+        certificate = crypto.load_certificate(CERTIFICATE_PATH)
+        certificate_bytes = crypto.encode_certificate(certificate)
+        nonce = os.urandom(12)
+        skey = crypto.load_signing_key(SIGNING_KEY_PATH)
+        signature = crypto.sign(skey, nonce)
+
+        # TODO: save clientDTO nonce in worker neutral variable
+
+        return jsonify({'message': 'Verification successful', 'certificate': certificate_bytes, 'nonce': nonce, 'signature': signature}), 200
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@app.route('/pkey', methods=['POST'])
+def pkey() -> Tuple[Any, int]:
+    """Connect with a client"""
+    try:
+        data, error_response = get_validated_json()
+        if error_response:
+            return error_response
+
+        uuid: Optional[str] = data.get('uuid')
+        pkey_bytes: Optional[str] = data.get('public_key')
+
+        # Validate required fields
+        if not uuid or not pkey_bytes:
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        client_pkey = crypto.decode_ecdh_pkey(pkey_bytes)
+
+        skey, pkey = gen_ecdh_keys()
+
+        key = derive_shared_key(skey, client_pkey)
+
+        enc_cipher, dec_cipher = get_ciphers(key)
+
+        # TODO: save clientDTO ciphers in worker neutral variable
+
+        return jsonify({'message': 'Key exchange completed', 'pkey': crypto.encode_ecdh_pkey(pkey)}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500

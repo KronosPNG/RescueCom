@@ -15,6 +15,46 @@ from datetime import datetime
 from pathlib import Path
 
 
+def encode_certificate(certificate: Certificate) -> bytes:
+    """
+    Encode a certificate
+
+    Args:
+        certificate (Certificate): the certificate to encode
+    Returns:
+        The bytes representing the encoded certificate
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+    if not isinstance(certificate, Certificate):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        return certificate.public_bytes(Encoding.PEM)
+    except Exception as e:
+        raise e
+
+def decode_certificate(data: bytes) -> Certificate:
+    """
+    Decode bytes into a certificate
+
+    Args:
+        The data to decode
+    Returns:
+        The decoded certificate
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+    if not isinstance(data, bytes):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        return load_pem_x509_certificate(data)
+    except Exception as e:
+        raise e
+
 def load_certificate(path: Path) -> Certificate:
     """
     Load a certificate at a given path

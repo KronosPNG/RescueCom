@@ -1,18 +1,11 @@
 import base64
-import os
-import uuid
-from pathlib import Path
-
 import cloud
 import requests
 
 from cloud import clientDTO
 
-from common.models import db, emergency, enc_emergency
+from common.models import emergency, enc_emergency
 from common.services import crypto, emergency_queue
-
-CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)).join(Path(os.getenv("CERTIFICATE_NAME", None)))
-
 
 def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
     """
@@ -72,66 +65,3 @@ def sync_new_emergency(
     """
 
     queue.push_emergency(emergency)
-
-
-def establish_connection(client_uuid: uuid.UUID, client_ip: str, client_nonce: bytes):
-    """
-    Establish a connection with a client by performing key exchange
-
-    Args:
-        client_uuid (UUID): client's uuid
-        client_ip (str): client's ip address
-        client_nonce (bytes): client's nonce for the session
-    Raises:
-        TypeError: if any argument is of the wrong type
-        Exception: for unexpected errors
-    """
-
-    if not isinstance(client_ip, str) or not isinstance(client_nonce, bytes):
-        raise TypeError("Wrong types for arguments")
-
-    if CERTIFICATE_PATH.exists():
-        certificate = crypto.load_certificate(CERTIFICATE_PATH)
-    else:
-        certificate = crypto.gen_certificate("Italia", "Salerno", "cloud", 30)
-
-    nonce = os.urandom(12)
-
-    skey, pkey = crypto.gen_ecdh_keys()
-
-    signature = crypto.sign(skey, nonce)
-
-    resp = requests.post(
-        client_ip + "/certificate/verify",
-        json={"certificate": certificate, "nonce": nonce, "signature": signature},
-    )
-
-    if not resp.ok:
-        raise requests.RequestException("Request failed")
-
-    # raises KeyError
-    client_pkey_bytes = resp.json()["pkey"]
-
-    # raises ValueError
-    client_pkey = crypto.decode_ecdh_pkey(client_pkey_bytes)
-
-    encoded_pkey = crypto.encode_ecdh_pkey(pkey)
-    resp = requests.post(
-        client_ip + "/publickey/register", json={"public_key": encoded_pkey}
-    )
-    if not resp.ok:
-        raise requests.RequestException("Request failed")
-
-    key = crypto.derive_shared_key(skey, client_pkey)
-
-    enc_cipher, dec_cipher = crypto.get_ciphers(key)
-
-    cloud.CLIENTS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, False)
-
-    user = db.DatabaseManager.get_instance().get_user_by_uuid(str(client_uuid))
-
-    if user is not None and user.is_rescuer:
-        cloud.RESCUERS[client_uuid] = clientDTO.ClientDTO(client_ip, enc_cipher, dec_cipher, nonce, client_nonce, True)
-
-    # raises Exception
-    crypto.save_certificate(CERTIFICATE_PATH, certificate)
