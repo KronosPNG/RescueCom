@@ -1,7 +1,7 @@
-from enum import Enum
 import heapq
-from typing import List, Tuple
 
+from typing import Self
+from enum import Enum
 from common.models.emergency import Emergency
 from common.models.enc_emergency import EncryptedEmergency
 
@@ -13,13 +13,17 @@ class SeverityType(Enum):
 
 
 class EmergencyQueue:
-    queue: List[List[Tuple[int, float, Emergency | EncryptedEmergency]],] = [
+    __instance = None
+    queue: list[list[tuple[int, float, Emergency | EncryptedEmergency]],] = [
         [],
         [],
         [],
     ]
 
     def __init__(self) -> None:
+        if not EmergencyQueue.__instance:
+            raise TypeError("EmergencyQueue singleton must be created using EmergencyQueue.get_instance")
+
         heapq.heapify_max(self.queue[SeverityType.LOW.value])  # Low severity
         heapq.heapify_max(self.queue[SeverityType.MEDIUM.value])  # Medium severity
         heapq.heapify_max(self.queue[SeverityType.HIGH.value])  # High severity
@@ -27,6 +31,20 @@ class EmergencyQueue:
         self.low_queue = self.queue[SeverityType.LOW.value]
         self.medium_queue = self.queue[SeverityType.MEDIUM.value]
         self.high_queue = self.queue[SeverityType.HIGH.value]
+
+    @classmethod
+    def get_instance(cls: type[Self]) -> Self:
+        """
+        Returns the singleton instance of EmergencyQueue.
+
+        Returns:
+            EmergencyQueue: The singleton instance of the emergency queue.
+        """
+
+        if cls.__instance is None:
+            cls.__instance = cls()
+
+        return cls.__instance
 
     def push_emergency(self, emergency: Emergency | EncryptedEmergency):
         """
@@ -122,7 +140,7 @@ class EmergencyQueue:
         # NOTE: Linear Search is the best in this case because the lists are not
         # sorted.
         def linear_search(
-            arr: List, new_emergency: Emergency | EncryptedEmergency
+            arr: list, new_emergency: Emergency | EncryptedEmergency
         ) -> int:
             index: int = 0
             for elem in arr:
