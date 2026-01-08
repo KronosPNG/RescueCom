@@ -5,7 +5,7 @@ import requests
 
 from pathlib import Path
 
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Any
 from flask import request, jsonify
 
 import cloud
@@ -21,16 +21,16 @@ SIGNING_KEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("SI
 
 
 
-def get_validated_json() -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[Any, int]]]:
+def get_validated_json() -> tuple[Optional[dict[str, Any]], Optional[tuple[Any, int]]]:
     """Extract and validate JSON data from request"""
-    data: Optional[Dict[str, Any]] = request.get_json()
+    data: Optional[dict[str, Any]] = request.get_json()
     if not data:
         return None, (jsonify({'error': 'No JSON data provided'}), 400)
     return data, None
 
 
-def extract_emergency_fields(data: Dict[str, Any]) -> Tuple[
-    Optional[enc_emergency.EncryptedEmergency], Optional[Tuple[Any, int]]]:
+def extract_emergency_fields(data: dict[str, Any]) -> tuple[
+    Optional[enc_emergency.EncryptedEmergency], Optional[tuple[Any, int]]]:
     """Extract and validate emergency fields from request data"""
     emergency_id: Optional[int] = data.get('emergency_id')
     user_uuid: Optional[str] = data.get('user_uuid')
@@ -55,7 +55,7 @@ def extract_emergency_fields(data: Dict[str, Any]) -> Tuple[
     return encrypted_emergency, None
 
 
-def create_user_from_data(data: Dict[str, Any]) -> Tuple[Optional[user.User], Optional[Tuple[Any, int]]]:
+def create_user_from_data(data: dict[str, Any]) -> tuple[Optional[user.User], Optional[tuple[Any, int]]]:
     """Extract and validate user fields from request data"""
     # Validate required fields
     required_fields: list[str] = ['uuid', 'is_rescuer', 'name', 'surname', 'birthday', 'blood_type']
@@ -79,7 +79,7 @@ def create_user_from_data(data: Dict[str, Any]) -> Tuple[Optional[user.User], Op
 
 
 @app.route('/emergency/submit', methods=['POST'])
-def emergency_submit() -> Tuple[Any, int]:
+def emergency_submit() -> tuple[Any, int]:
     """Submit an emergency"""
     try:
         data, error_response = get_validated_json()
@@ -90,7 +90,13 @@ def emergency_submit() -> Tuple[Any, int]:
         if error_response:
             return error_response
 
-        client: ClientDTO = cloud.CLIENTS[encrypted_emergency.user_uuid]
+        client = None
+        with cloud.status_lock:
+            client = cloud.CLIENTS[encrypted_emergency.user_uuid]
+
+        if not client:
+            raise Exception("Client not found")
+
         decrypted_blob: bytes = crypto.decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
         emergency: Emergency = Emergency.unpack(encrypted_emergency.emergency_id,
                                                 encrypted_emergency.user_uuid,
@@ -102,7 +108,7 @@ def emergency_submit() -> Tuple[Any, int]:
 
 
 @app.route('/emergency/accept', methods=['POST'])
-def emergency_accept() -> Tuple[Any, int]:
+def emergency_accept() -> tuple[Any, int]:
     """Accept an emergency"""
     try:
         data, error_response = get_validated_json()
@@ -113,44 +119,58 @@ def emergency_accept() -> Tuple[Any, int]:
         if error_response:
             return error_response
 
-        persistence.save_encrypted_emergency(encrypted_emergency)
+        rescuer = None
+        with cloud.status_lock:
+            if data["uuid"] in cloud.RESCUERS:
+                rescuer = cloud.RESCUERS[data["uuid"]]
 
-        # Send a message to the rescuee associated with the request
+        if not rescuer:
+            raise Exception("Rescuer uuid not found")
+
+        # Send a message to the Rescuee associated with the request
         user_uuid: str = encrypted_emergency.user_uuid
-        if user_uuid in cloud.CLIENTS:
-            client: ClientDTO = cloud.CLIENTS[user_uuid]
-            # Create notification message
-            message: Dict[str, str] = {
-                "type": "emergency_accepted",
-                "emergency_id": encrypted_emergency.emergency_id,
-                "timestamp": datetime.datetime.now().isoformat()
-            }
 
-            # Encrypt the message for the client
-            encrypted_message: bytes = crypto.encrypt(
-                encrypted_emergency, client.cloud_nonce,
-                str(message).encode(), b""  # No additional authenticated data for now
+        with cloud.status_lock:
+            if user_uuid in cloud.CLIENTS:
+                client: ClientDTO = cloud.CLIENTS[user_uuid]
+            else:
+                raise Exception("Client couldn't be found")
+
+        decrypted_blob: bytes = crypto.decrypt(rescuer.dec_cipher, rescuer.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
+
+        # Create notification message
+        message: dict[str, str] = {
+            "type": "emergency_accepted",
+            "emergency_id": encrypted_emergency.emergency_id,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+
+        # Encrypt the message for the client
+        encrypted_message: bytes = crypto.encrypt(
+            encrypted_emergency, client.cloud_nonce,
+            str(message).encode(), b""  # No additional authenticated data for now
+        )
+
+        # Send message to the client
+        try:
+            requests.post(
+                client.ip + "/notification/receive",
+                json={
+                    "message": base64.b64encode(encrypted_message).decode(),
+                },
+                timeout=3  # Short timeout to avoid blocking
             )
-
-            # Send message to the client
-            try:
-                requests.post(
-                    client.ip + "/notification/receive",
-                    json={
-                        "message": base64.b64encode(encrypted_message).decode(),
-                    },
-                    timeout=3  # Short timeout to avoid blocking
-                )
-            except Exception as msg_err:
-                # Log the error but continue with the main request
-                app.logger.error(f"Failed to send notification: {str(msg_err)}")
+        except Exception as msg_err:
+            # Log the error but continue with the main request
+            app.logger.error(f"Failed to send notification: {str(msg_err)}")
 
         return jsonify({'message': 'Emergency accepted successfully', 'data': data}), 200
+
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/emergency/update', methods=['POST'])
-def emergency_update() -> Tuple[Any, int]:
+def emergency_update() -> tuple[Any, int]:
     """Update an emergency"""
     try:
         data, error_response = get_validated_json()
@@ -170,7 +190,7 @@ def emergency_update() -> Tuple[Any, int]:
 
 
 @app.route('/emergency/delete', methods=['POST'])
-def emergency_delete() -> Tuple[Any, int]:
+def emergency_delete() -> tuple[Any, int]:
     """Delete an emergency"""
     try:
         data, error_response = get_validated_json()
@@ -193,56 +213,8 @@ def emergency_delete() -> Tuple[Any, int]:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
-@app.route('/certificate/verify', methods=['POST'])
-def certificate_verify() -> Tuple[Any, int]:
-    """Verify a certificate with nonce and signature"""
-    try:
-        data, error_response = get_validated_json()
-        if error_response:
-            return error_response
-
-        # Extract fields from request data
-        certificate: Optional[str] = data.get('certificate')
-        nonce: Optional[str] = data.get('nonce')
-        signature: Optional[str] = data.get('signature')
-
-        # Validate required fields
-        if not certificate or not nonce or not signature:
-            return jsonify({'error': 'Missing required fields: certificate, nonce, and signature'}), 400
-
-        # TODO: Implement certificate verification logic
-        # Verify the certificate against trusted CA
-        # Verify the signature using the certificate's public key and nonce
-
-        # For now, return a placeholder response with public key
-        return jsonify({'message': 'Certificate verified successfully', 'pkey': 'placeholder_public_key'}), 200
-    except Exception as e:
-        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
-
-
-@app.route('/publickey/register', methods=['POST'])
-def publickey_register() -> Tuple[Any, int]:
-    try:
-        data, error_response = get_validated_json()
-        if error_response:
-            return error_response
-
-        # Extract fields from request data
-        public_key: Optional[str] = data.get('public_key')
-
-        # Validate required fields
-        if not public_key:
-            return jsonify({'error': 'Missing required field: public_key'}), 400
-
-        # TODO: Implement logic to save or update user with public key
-
-        return jsonify({'message': 'Public key registered successfully', 'data': data}), 200
-    except Exception as e:
-        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
-
-
 @app.route('/user/save', methods=['POST'])
-def user_save() -> Tuple[Any, int]:
+def user_save() -> tuple[Any, int]:
     """Save a user"""
     try:
         data, error_response = get_validated_json()
@@ -260,7 +232,7 @@ def user_save() -> Tuple[Any, int]:
 
 
 @app.route('/user/update', methods=['POST'])
-def user_update() -> Tuple[Any, int]:
+def user_update() -> tuple[Any, int]:
     """Update a user"""
     try:
         data, error_response = get_validated_json()
@@ -278,7 +250,7 @@ def user_update() -> Tuple[Any, int]:
 
 
 @app.route('/user/delete', methods=['POST'])
-def user_delete() -> Tuple[Any, int]:
+def user_delete() -> tuple[Any, int]:
     """Delete a user"""
     try:
         data, error_response = get_validated_json()
@@ -297,7 +269,7 @@ def user_delete() -> Tuple[Any, int]:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/connect', methods=['POST'])
-def connect() -> Tuple[Any, int]:
+def connect() -> tuple[Any, int]:
     """Connect with a client"""
     try:
         data, error_response = get_validated_json()
@@ -323,14 +295,19 @@ def connect() -> Tuple[Any, int]:
         skey = crypto.load_signing_key(SIGNING_KEY_PATH)
         signature = crypto.sign(skey, nonce)
 
-        # TODO: save clientDTO nonce in worker neutral variable
+        with cloud.status_lock:
+            cloud.CLIENTS[uuid] = ClientDTO(
+                    request.remote_addr,
+                    None, None, client_nonce, nonce,
+                    True, # TODO: how do we identify Rescuers?
+                    )
 
         return jsonify({'message': 'Verification successful', 'certificate': certificate_bytes, 'nonce': nonce, 'signature': signature}), 200
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/pkey', methods=['POST'])
-def pkey() -> Tuple[Any, int]:
+def pkey() -> tuple[Any, int]:
     """Connect with a client"""
     try:
         data, error_response = get_validated_json()
@@ -352,7 +329,12 @@ def pkey() -> Tuple[Any, int]:
 
         enc_cipher, dec_cipher = get_ciphers(key)
 
-        # TODO: save clientDTO ciphers in worker neutral variable
+        with cloud.status_lock:
+            if not uuid in cloud.CLIENTS:
+                raise Exception("Perform certificate verification first")
+
+            cloud.CLIENTS[uuid].enc_cipher = enc_cipher
+            cloud.CLIENTS[uuid].dec_cipher = dec_cipher
 
         return jsonify({'message': 'Key exchange completed', 'pkey': crypto.encode_ecdh_pkey(pkey)}), 200
     except Exception as e:
