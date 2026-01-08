@@ -1,4 +1,4 @@
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_x509_signing_key
 from cryptography.x509 import (
         load_pem_x509_certificate, random_serial_number, Certificate, CertificateBuilder, Name, NameAttribute
 )
@@ -54,6 +54,32 @@ def decode_certificate(data: bytes) -> Certificate:
         return load_pem_x509_certificate(data)
     except Exception as e:
         raise e
+
+def load_signing_key(path: Path) -> Ed25519PrivateKey:
+    """
+    Load signing key at a given path
+
+    Args:
+        path (Path): path where the key is located
+
+    Returns:
+        The private key found at path
+
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+
+    if not isinstance(path, Path):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        with path.open() as f:
+            return load_pem_private_key(f.read(), b"")
+    except Exception as e:
+        raise e
+
+    return certificate
 
 def load_certificate(path: Path) -> Certificate:
     """
