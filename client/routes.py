@@ -1,59 +1,41 @@
 import base64
 import json
-from typing import Optional, Dict, Any, Tuple
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
+from typing import Optional, Dict, Any
+
 from flask import request, jsonify, Response
 
-from client import app
+from client import app, DEC_CIPHER, NONCE, CLOUD_NONCE
 from common.models.emergency import Emergency
 from common.services import crypto
 
-# -----------------------------
-# Client crypto state
-# -----------------------------
 
-_DEC_CIPHER: Optional[AESGCMSIV] = None
-_NONCE: Optional[bytes] = None
-
-
-def init_client_crypto(dec_cipher: AESGCMSIV, nonce: bytes) -> None:
-    global _DEC_CIPHER, _NONCE
-    _DEC_CIPHER = dec_cipher
-    _NONCE = nonce
-
-
-# -----------------------------
-# Helpers (cloud-style)
-# -----------------------------
-
-def get_validated_json() -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[Response, int]]]:
+def get_validated_json() -> tuple[Optional[Dict[str, Any]], Optional[tuple[Response, int]]]:
     data: Optional[Dict[str, Any]] = request.get_json()
+
     if not data:
         return None, (jsonify({'error': 'No JSON data provided'}), 400)
+
     return data, None
 
-
-def decrypt_message(encrypted_b64: str) -> Tuple[Optional[Dict[str, Any]], Optional[Tuple[Response, int]]]:
-    if _DEC_CIPHER is None or _NONCE is None:
+def decrypt_message(encrypted_b64: str) -> tuple[Optional[Dict[str, Any]], Optional[tuple[Response, int]]]:
+    if DEC_CIPHER is None or NONCE is None or CLOUD_NONCE is None:
         return None, (jsonify({'error': 'Client crypto not initialized'}), 500)
 
     try:
         encrypted_bytes: bytes = base64.b64decode(encrypted_b64)
-        decrypted_bytes: bytes = crypto.decrypt(_DEC_CIPHER, _NONCE, encrypted_bytes, b"")
+        decrypted_bytes: bytes = crypto.decrypt(DEC_CIPHER, CLOUD_NONCE, encrypted_bytes, b"")
         return json.loads(decrypted_bytes.decode()), None
+
     except (ValueError, json.JSONDecodeError) as e:
         return None, (jsonify({'error': f'Failed to decrypt message: {str(e)}'}), 400)
+
     except Exception as e:
         return None, (jsonify({'error': f'Decryption error: {str(e)}'}), 500)
 
 
-# -----------------------------
-# Routes
-# -----------------------------
-
 @app.route('/notification/receive', methods=['POST'])
-def notification_receive() -> Tuple[Response, int]:
+def notification_receive() -> tuple[Response, int]:
     """Receive encrypted notifications from cloud"""
     try:
         data, error = get_validated_json()
@@ -91,7 +73,7 @@ def notification_receive() -> Tuple[Response, int]:
 
 
 @app.route('/emergency/receive', methods=['POST'])
-def emergency_receive() -> Tuple[Response, int]:
+def emergency_receive() -> tuple[Response, int]:
     """Receive encrypted emergency payload (rescuer side)"""
     try:
         data, error = get_validated_json()
@@ -108,11 +90,11 @@ def emergency_receive() -> Tuple[Response, int]:
                 'error': 'Missing required fields: emergency_id, user_uuid, blob'
             }), 400
 
-        if _DEC_CIPHER is None or _NONCE is None:
+        if DEC_CIPHER is None or NONCE is None or CLOUD_NONCE is None:
             return jsonify({'error': 'Client crypto not initialized'}), 500
 
         encrypted_blob: bytes = base64.b64decode(blob_b64)
-        decrypted_blob: bytes = crypto.decrypt(_DEC_CIPHER, _NONCE, encrypted_blob, b"")
+        decrypted_blob: bytes = crypto.decrypt(DEC_CIPHER, CLOUD_NONCE, encrypted_blob, b"")
 
         emergency: Emergency = Emergency.unpack(
             emergency_id,
@@ -128,12 +110,13 @@ def emergency_receive() -> Tuple[Response, int]:
 
     except ValueError as e:
         return jsonify({'error': f'Failed to unpack emergency: {str(e)}'}), 400
+
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
 @app.route('/emergency/status', methods=['POST'])
-def emergency_status() -> Tuple[Response, int]:
+def emergency_status() -> tuple[Response, int]:
     """Receive encrypted emergency status update"""
     try:
         data, error = get_validated_json()
@@ -167,7 +150,7 @@ def emergency_status() -> Tuple[Response, int]:
 
 
 @app.route('/rescuer/assignment', methods=['POST'])
-def rescuer_assignment() -> Tuple[Response, int]:
+def rescuer_assignment() -> tuple[Response, int]:
     """Receive encrypted rescuer assignment"""
     try:
         data, error = get_validated_json()
@@ -194,7 +177,3 @@ def rescuer_assignment() -> Tuple[Response, int]:
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
-
-@app.route('/health', methods=['GET'])
-def health_check() -> Tuple[Response, int]:
-    return jsonify({'message': 'Client is healthy'}), 200
