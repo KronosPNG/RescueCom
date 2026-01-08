@@ -86,10 +86,8 @@ def load_certificate(path: Path) -> Certificate:
 
     Args:
         path (Path): path where the certificate is located
-
     Returns:
         The certificate found at `path`
-
     Raises:
         TypeError: if any argument is of the wrong type
         Exception: for unexpected errors
@@ -106,9 +104,32 @@ def load_certificate(path: Path) -> Certificate:
 
     return certificate
 
-def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> tuple[Ed25519PrivateKey, Certificate]:
+def save_certificate(path: Path, certificate: Certificate) -> None:
     """
-    Generate a private key and self-signed certificate to authenticate
+    Save a certificate to a given path
+
+    Args:
+        path (Path): path where the certificate is to be saved
+        certificate (Certificate): certificate to save
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+
+    if not isinstance(path, Path) or not isinstance(certificate, Certificate):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        path.touch()
+
+        with path.open() as f:
+            f.write(certificate.public_bytes(Encoding.PEM))
+    except Exception as e:
+        raise e
+
+def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> Certificate:
+    """
+    Generate a self-signed certificate to authenticate
 
     Args:
         country (str): country of residence
@@ -117,7 +138,7 @@ def gen_certificate(country: str, state_or_province: str, locality: str, common_
         common_name (str): name and surname
         duration (int): duration of the validity of the certificate in days (default: 30)
     Returns:
-        The generated private key and certificate
+        The generated certificate
     Raises:
         TypeError: if any argument is of the wrong type
         ValueError: for invalid duration
@@ -155,7 +176,7 @@ def gen_certificate(country: str, state_or_province: str, locality: str, common_
             skey, None
         )
 
-    return skey, certificate
+    return certificate
 
 def verify_certificate(certificate: Certificate, signature: bytes, nonce: bytes) -> bool:
     """
