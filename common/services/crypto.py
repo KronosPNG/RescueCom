@@ -1,4 +1,4 @@
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_x509_signing_key
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
 from cryptography.x509 import (
         load_pem_x509_certificate, random_serial_number, Certificate, CertificateBuilder, Name, NameAttribute
 )
@@ -13,7 +13,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from datetime import datetime
 from pathlib import Path
-
 
 def encode_certificate(certificate: Certificate) -> bytes:
     """
