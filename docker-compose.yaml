@@ -1,0 +1,18 @@
+services:
+  cloud:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    env_file: ./cloud/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - data:${DB_DIR}
+      - certs:${CERTIFICATE_DIR}
+
+
+volumes:
+  data:
+    external: true
+  certs:
+    external: true

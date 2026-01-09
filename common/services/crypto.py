@@ -1,5 +1,6 @@
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
 from cryptography.x509 import (
-        random_serial_number, Certificate, CertificateBuilder, Name, NameAttribute
+        load_pem_x509_certificate, random_serial_number, Certificate, CertificateBuilder, Name, NameAttribute
 )
 from cryptography.x509.oid import NameOID
 
@@ -11,11 +12,124 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from datetime import datetime
+from pathlib import Path
 
-
-def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> tuple[Ed25519PrivateKey, Certificate]:
+def encode_certificate(certificate: Certificate) -> bytes:
     """
-    Generate a private key and self-signed certificate to authenticate
+    Encode a certificate
+
+    Args:
+        certificate (Certificate): the certificate to encode
+    Returns:
+        The bytes representing the encoded certificate
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+    if not isinstance(certificate, Certificate):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        return certificate.public_bytes(Encoding.PEM)
+    except Exception as e:
+        raise e
+
+def decode_certificate(data: bytes) -> Certificate:
+    """
+    Decode bytes into a certificate
+
+    Args:
+        The data to decode
+    Returns:
+        The decoded certificate
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+    if not isinstance(data, bytes):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        return load_pem_x509_certificate(data)
+    except Exception as e:
+        raise e
+
+def load_signing_key(path: Path) -> Ed25519PrivateKey:
+    """
+    Load signing key at a given path
+
+    Args:
+        path (Path): path where the key is located
+
+    Returns:
+        The private key found at path
+
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+
+    if not isinstance(path, Path):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        with path.open() as f:
+            return load_pem_private_key(f.read(), b"")
+    except Exception as e:
+        raise e
+
+    return certificate
+
+def load_certificate(path: Path) -> Certificate:
+    """
+    Load a certificate at a given path
+
+    Args:
+        path (Path): path where the certificate is located
+    Returns:
+        The certificate found at `path`
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+
+    if not isinstance(path, Path):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        with path.open() as f:
+            certificate = load_pem_x509_certificate(f.read())
+    except Exception as e:
+        raise e
+
+    return certificate
+
+def save_certificate(path: Path, certificate: Certificate) -> None:
+    """
+    Save a certificate to a given path
+
+    Args:
+        path (Path): path where the certificate is to be saved 
+        certificate (Certificate): certificate to save
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+
+    if not isinstance(path, Path) or not isinstance(certificate, Certificate):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        path.touch()
+
+        with path.open() as f:
+            f.write(certificate.public_bytes(Encoding.PEM))
+    except Exception as e:
+        raise e
+
+def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> Certificate:
+    """
+    Generate a self-signed certificate to authenticate
 
     Args:
         country (str): country of residence
@@ -24,7 +138,7 @@ def gen_certificate(country: str, state_or_province: str, locality: str, common_
         common_name (str): name and surname
         duration (int): duration of the validity of the certificate in days (default: 30)
     Returns:
-        The generated private key and certificate
+        The generated certificate
     Raises:
         TypeError: if any argument is of the wrong type
         ValueError: for invalid duration
@@ -62,7 +176,7 @@ def gen_certificate(country: str, state_or_province: str, locality: str, common_
             skey, None
         )
 
-    return skey, certificate
+    return certificate
 
 def verify_certificate(certificate: Certificate, signature: bytes, nonce: bytes) -> bool:
     """
@@ -116,6 +230,41 @@ def sign(skey: Ed25519PrivateKey, data: bytes) -> bytes:
         raise TypeError("Wrong types for arguments")
 
     return skey.sign(data)
+
+def decode_ecdh_pkey(data: bytes) -> EllipticCurvePublicKey:
+    """
+    Decode an ECDH public key from encoded bytes
+
+    Args:
+        data (bytes): encoded public key
+    Returns:
+        Decoded public key
+    Raises:
+        TypeError: if any argument is of the wrong type
+        ValueError: if an invalid point is supplied
+    """
+
+    if not isinstance(data, bytes):
+        raise TypeError("Wrong types for arguments")
+
+    return EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), data)
+
+def encode_ecdh_pkey(pkey: EllipticCurvePublicKey) -> bytes:
+    """
+    Encode an ECDH public key to a bytes object
+
+    Args:
+        pkey (EllipticCurvePublicKey): public key to encode
+    Returns:
+        data (bytes): encoded public key
+    Raises:
+        TypeError: if any argument is of the wrong type
+    """
+
+    if not isinstance(pkey, EllipticCurvePublicKey):
+        raise TypeError("Wrong types for arguments")
+
+    return pkey.public_bytes(Encoding.X962, PublicFormat.CompressedPoint)
 
 def gen_ecdh_keys() -> tuple[EllipticCurvePrivateKey, EllipticCurvePublicKey]:
     """
