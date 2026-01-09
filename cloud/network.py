@@ -1,5 +1,4 @@
 import base64
-import cloud
 import requests
 
 import cloud
