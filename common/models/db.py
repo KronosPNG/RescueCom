@@ -78,7 +78,7 @@ class DatabaseManager:
             emergency_id INTEGER NOT NULL,
             user_uuid TEXT NOT NULL,
             position TEXT DEFAULT '0,0',
-            address TEXT NOT,
+            address TEXT,
             city TEXT,
             street_number INTEGER,
             place_description TEXT,
