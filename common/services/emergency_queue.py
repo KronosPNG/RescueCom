@@ -150,8 +150,10 @@ class EmergencyQueue:
         ) -> int:
             index: int = 0
             for elem in arr:
-                if (elem[2].user_uuid == new_emergency.user_uuid) and (
-                    elem[2].emergency_id == new_emergency.emergency_id
+                if (
+                    (elem[2] is not None)
+                    and (elem[2].user_uuid == new_emergency.user_uuid)
+                    and (elem[2].emergency_id == new_emergency.emergency_id)
                 ):
                     return index
                 index += 1
