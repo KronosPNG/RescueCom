@@ -25,7 +25,9 @@ class EmergencyQueue:
 
     def __init__(self) -> None:
         if not EmergencyQueue.__instance:
-            raise TypeError("EmergencyQueue singleton must be created using EmergencyQueue.get_instance")
+            raise TypeError(
+                "EmergencyQueue singleton must be created using EmergencyQueue.get_instance"
+            )
 
         heapq.heapify_max(self.queue[SeverityType.LOW.value])  # Low severity
         heapq.heapify_max(self.queue[SeverityType.MEDIUM.value])  # Medium severity
