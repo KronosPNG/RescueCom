@@ -22,41 +22,57 @@ export function setRequests(newRequests) {
  * Parses raw Emergency JSON (Python class structure) into Dashboard Request format
  */
 export function parseEmergencyData(emergency) {
-    // 1. Parse Position
+    // 1. Parse Position (emposition: "lat,lng")
     let lat = 0, lng = 0;
-    if (emergency.position && typeof emergency.position === 'string') {
-        [lat, lng] = emergency.position.split(',').map(Number);
+    const posString = emergency.emposition || emergency.position || '0,0';
+    if (typeof posString === 'string') {
+        [lat, lng] = posString.split(',').map(n => parseFloat(n.trim()) || 0);
     }
 
-    // 2. Parse Details
-    let details = {};
-    try {
-        details = JSON.parse(emergency.details_json || '{}');
-    } catch (e) {
-        console.error("Error parsing details_json", e);
-        details = { gravity: 'medium', type: 'Segnalazione Generica' };
-    }
+    // 2. Parse Priority from emscore
+    // Assuming emscore is a number 0-100 or similar. Adjust logic as needed.
+    // Defaulting to medium if undefined.
+    let priority = 'medium';
+    const score = parseInt(emergency.emscore) || 0;
+    if (score >= 80) priority = 'high';
+    else if (score >= 40) priority = 'medium';
+    else priority = 'low';
 
     // 3. Photo
-    const photoUrl = emergency.photo_b64
-        ? `data:image/png;base64,${emergency.photo_b64}`
+    const photoUrl = emergency.empicture
+        ? (emergency.empicture.startsWith('http') ? emergency.empicture : `data:image/png;base64,${emergency.empicture}`)
         : null;
 
-    // 4. Construct Object
+    // 4. Calculate Age
+    let age = 'N/A';
+    if (emergency.birthday) {
+        const birthDate = new Date(emergency.birthday);
+        if (!isNaN(birthDate.getTime())) {
+            const today = new Date();
+            let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                calculatedAge--;
+            }
+            age = calculatedAge.toString();
+        }
+    }
+
+    // 5. Construct Object
     return {
-        id: `REQ-${emergency.id}`,
+        id: `REQ-${emergency.id || Math.floor(Math.random() * 1000)}`,
         time: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-        type: details.type || 'Emergenza',
-        desc: emergency.place_description || 'Nessuna descrizione luogo',
-        priority: details.gravity || 'medium',
+        type: emergency.emtype || 'Emergenza',
+        desc: emergency.emdescription || 'Nessuna descrizione',
+        priority: priority,
         location: { lat: lat, lng: lng },
-        address: `${emergency.address}, ${emergency.street_number}, ${emergency.city}`,
+        address: emergency.address || 'Indirizzo non disponibile', // Keep fallback if address isn't in new fields
         photo: photoUrl,
         user: {
-            name: emergency.user_uuid ? `Utente ${emergency.user_uuid.substring(0, 8)}...` : 'Utente App',
-            age: 'N/A',
-            blood: 'N/A',
-            conditions: ['Dati non disponibili']
+            name: `${emergency.name || ''} ${emergency.surname || ''}`.trim() || 'Utente Sconosciuto',
+            age: age,
+            blood: emergency.bloodtype || 'N/A',
+            conditions: emergency.healthinfo ? [emergency.healthinfo] : ['Nessuna info medica']
         },
         originalData: emergency
     };

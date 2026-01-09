@@ -49,16 +49,24 @@ export function renderDetailPanel(req, panelId, onContact, onDispatch) {
     const detailPanel = document.getElementById(panelId);
     if (!detailPanel || !req) return;
 
-    const conditionsHtml = req.user.conditions.map(c => `<span class="health-badge">${c}</span>`).join('');
+    // Conditions is array of strings
+    const conditionsHtml = (req.user.conditions && req.user.conditions.length > 0 && req.user.conditions[0] !== 'Nessuna info medica')
+        ? req.user.conditions.map(c => `<span class="health-badge" style="background: #ef444422; color: #f87171; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; border: 1px solid #ef444444;">${c}</span>`).join(' ')
+        : '<span style="color: #94a3b8; font-style: italic;">Nessuna patologia nota</span>';
+
+    // Blood type badge
+    const bloodHtml = req.user.blood !== 'N/A'
+        ? `<span class="blood-badge" style="background: #3b82f622; color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; border: 1px solid #3b82f644; margin-left: 5px;">${req.user.blood}</span>`
+        : '<span style="color: #94a3b8;">N/A</span>';
 
     const photoHtml = req.photo
         ? `<div class="info-group">
              <div class="info-label">Foto Inviata</div>
-             <img src="${req.photo}" style="width: 100%; border-radius: 8px; margin-top: 5px; border: 1px solid #334155;">
+             <img src="${req.photo}" style="width: 100%; border-radius: 8px; margin-top: 5px; border: 1px solid #334155; max-height: 200px; object-fit: cover;">
            </div>`
         : '';
 
-    const addressHtml = req.address
+    const addressHtml = (req.address && req.address !== 'Indirizzo non disponibile')
         ? `<div class="info-group">
             <div class="info-label">Indirizzo Rilevato</div>
             <div class="info-value"><i class="bi bi-geo-alt"></i> ${req.address}</div>
@@ -74,7 +82,7 @@ export function renderDetailPanel(req, panelId, onContact, onDispatch) {
         <div class="info-group">
             <div class="info-label">Stato Emergenza</div>
             <div class="info-value">
-                <span style="color: var(--accent-${req.priority === 'high' ? 'red' : req.priority === 'medium' ? 'orange' : 'green'})">
+                <span style="color: var(--accent-${req.priority === 'high' ? 'red' : req.priority === 'medium' ? 'orange' : 'green'}, ${req.priority === 'high' ? '#ef4444' : req.priority === 'medium' ? '#f97316' : '#22c55e'})">
                     ${req.priority.toUpperCase()} PRIORITY
                 </span>
             </div>
@@ -91,7 +99,7 @@ export function renderDetailPanel(req, panelId, onContact, onDispatch) {
             <div class="info-label">Dati Paziente</div>
             <div class="info-value"><strong>Nome:</strong> ${req.user.name}</div>
             <div class="info-value"><strong>Età:</strong> ${req.user.age}</div>
-            <div class="info-value"><strong>Gruppo Sanguigno:</strong> ${req.user.blood}</div>
+            <div class="info-value"><strong>Gruppo Sanguigno:</strong> ${bloodHtml}</div>
         </div>
 
          <div class="info-group">
@@ -101,7 +109,7 @@ export function renderDetailPanel(req, panelId, onContact, onDispatch) {
 
         <div class="info-group">
             <div class="info-label">Coordinate GPS</div>
-            <div class="info-value">Lat: ${req.location.lat}<br>Lng: ${req.location.lng}</div>
+            <div class="info-value">Lat: ${req.location.lat.toFixed(6)}<br>Lng: ${req.location.lng.toFixed(6)}</div>
         </div>
 
         ${photoHtml}
@@ -112,7 +120,6 @@ export function renderDetailPanel(req, panelId, onContact, onDispatch) {
         </div>
         
         <div style="margin-top: 10px;">
-             <!-- Added primary action separately for spacing -->
              <button id="btnDispatch" class="btn btn-primary" style="width: 100%">Invia Soccorsi</button>
         </div>
     `;
