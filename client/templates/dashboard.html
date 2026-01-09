@@ -86,23 +86,9 @@
                 <h2 style="font-size: 1.4rem; margin-bottom: 15px; display: flex; align-items: center;">
                     <span class="dot dot-grave"></span> Grave
                 </h2>
-
-                {% for req in groups['grave'] %}
-                <!-- Dettaglio Collassabile -->
-                <details>
-                    <summary>
-                        <div class="summary-content">
-                            <span>{{ req.name }} {{ req.surname }} - {{ req.emtype }}</span>
-                        </div>
-                        <i class="bi bi-caret-down-fill" style="font-size: 0.8rem; color: #666;"></i>
-                    </summary>
-                    {{ render_request_detail(req) }}
-                </details>
-                {% endfor %}
-
-                {% if not groups['grave'] %}
-                <p style="color: #666; font-style: italic; margin-bottom: 20px;">Nessuna emergenza grave.</p>
-                {% endif %}
+                <div id="feed-grave" class="feed-container">
+                    <p style="color: #666; font-style: italic;">Caricamento richieste...</p>
+                </div>
             </div>
 
             <!-- Sezione: Moderato -->
@@ -110,20 +96,9 @@
                 <h2 style="font-size: 1.4rem; margin-bottom: 15px; display: flex; align-items: center;">
                     <span class="dot dot-moderato"></span> Moderato
                 </h2>
-                {% for req in groups['moderato'] %}
-                <details>
-                    <summary>
-                        <div class="summary-content">
-                            <span>{{ req.name }} {{ req.surname }} - {{ req.emtype }}</span>
-                        </div>
-                        <i class="bi bi-caret-down-fill" style="font-size: 0.8rem; color: #666;"></i>
-                    </summary>
-                    {{ render_request_detail(req) }}
-                </details>
-                {% endfor %}
-                {% if not groups['moderato'] %}
-                <div style="color: #999; font-style: italic; margin-bottom: 20px;">Nessuna richiesta</div>
-                {% endif %}
+                <div id="feed-moderato" class="feed-container">
+                    <p style="color: #666; font-style: italic;">In attesa di dati...</p>
+                </div>
             </div>
 
             <!-- Sezione: Lieve -->
@@ -131,25 +106,16 @@
                 <h2 style="font-size: 1.4rem; margin-bottom: 15px; display: flex; align-items: center;">
                     <span class="dot dot-lieve"></span> Lieve
                 </h2>
-                {% for req in groups['lieve'] %}
-                <details>
-                    <summary>
-                        <div class="summary-content">
-                            <span><strong>{{ req.name }} {{ req.surname }}</strong> - {{ req.emtype }}</span>
-                        </div>
-                        <i class="bi bi-caret-down-fill" style="font-size: 0.8rem; color: #666;"></i>
-                    </summary>
-                    {{ render_request_detail(req) }}
-                </details>
-                {% endfor %}
-                {% if not groups['lieve'] %}
-                <div style="color: #999; font-style: italic; margin-bottom: 20px;">Nessuna richiesta</div>
-                {% endif %}
+                <div id="feed-lieve" class="feed-container">
+                    <p style="color: #666; font-style: italic;">In attesa di dati...</p>
+                </div>
             </div>
 
         </main>
     </div>
 
 </body>
+
+<script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 
 </html>

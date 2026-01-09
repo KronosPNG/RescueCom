@@ -6,19 +6,66 @@ export function renderFeed(requests, feedListId, onCardClick) {
 
     feedList.innerHTML = '';
     requests.forEach(req => {
-        const card = document.createElement('div');
+        const card = document.createElement('details');
         card.className = `request-card priority-${req.priority}`;
+
+        // Prepare Health Badges
+        const conditionsHtml = (req.user.conditions && req.user.conditions.length > 0 && req.user.conditions[0] !== 'Nessuna info medica')
+            ? req.user.conditions.map(c => `<span class="health-badge warning">${c}</span>`).join(' ')
+            : '<span class="health-badge neutral">Nessuna patologia nota</span>';
+
+        // Blood Badge
+        const bloodHtml = req.user.blood !== 'N/A'
+            ? `<span class="health-badge info">Gr. ${req.user.blood}</span>`
+            : '';
+
+        // Safely handle potential undefined location
+        const lat = req.location?.lat?.toFixed(5) || 'N/A';
+        const lng = req.location?.lng?.toFixed(5) || 'N/A';
+
         card.innerHTML = `
-            <div class="card-top">
-                <span class="card-id">${req.id}</span>
-                <span class="card-time">${req.time}</span>
+            <summary>
+                <div class="summary-content">
+                    <div class="summary-header">
+                        <span class="card-id">${req.id}</span>
+                        <span class="card-time">${req.time}</span>
+                    </div>
+                    <div class="card-title">${req.type}</div>
+                    <div class="card-preview">${req.desc}</div>
+                </div>
+                <i class="bi bi-caret-down-fill" style="margin-left: 10px; color: #94a3b8;"></i>
+            </summary>
+            
+            <div class="card-details">
+                <div class="info-group">
+                    <div class="info-label">Dati Paziente</div>
+                    <div class="info-value">
+                        <strong>${req.user.name}</strong> • ${req.user.age} anni ${bloodHtml}
+                    </div>
+                    <div style="margin-top: 8px;">${conditionsHtml}</div>
+                </div>
+
+                <div class="info-group">
+                    <div class="info-label">Luogo & Descrizione</div>
+                    <div class="info-value">${req.desc}</div>
+                    <div class="info-value" style="margin-top: 4px; font-size: 0.85rem; color: #64748b;">
+                        <i class="bi bi-geo-alt-fill"></i> ${req.address} <br>
+                        <span style="font-family: monospace; opacity: 0.8;">GPS: ${lat}, ${lng}</span>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                     <button onclick="window.open('/detail/${req.originalData?.id || req.id.replace('REQ-', '')}', '_self')" 
+                        class="btn-sm-primary">
+                        <i class="bi bi-file-text"></i> Visualizza Dettagli
+                     </button>
+                </div>
             </div>
-            <div class="card-title">${req.type}</div>
-            <div class="card-preview">${req.desc}</div>
         `;
 
         if (onCardClick) {
-            card.addEventListener('click', () => onCardClick(req));
+            // Optional: keep click listener on summary if needed, but details handles expansion natively
+            // card.querySelector('summary').addEventListener('click', (e) => onCardClick(req));
         }
 
         feedList.appendChild(card);
