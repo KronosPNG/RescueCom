@@ -235,7 +235,7 @@ def decode_ecdh_pkey(data: bytes) -> EllipticCurvePublicKey:
     """
     Decode an ECDH public key from encoded bytes
 
-    Args
+    Args:
         data (bytes): encoded public key
     Returns:
         Decoded public key
@@ -253,7 +253,7 @@ def encode_ecdh_pkey(pkey: EllipticCurvePublicKey) -> bytes:
     """
     Encode an ECDH public key to a bytes object
 
-    Args
+    Args:
         pkey (EllipticCurvePublicKey): public key to encode
     Returns:
         data (bytes): encoded public key
@@ -261,7 +261,7 @@ def encode_ecdh_pkey(pkey: EllipticCurvePublicKey) -> bytes:
         TypeError: if any argument is of the wrong type
     """
 
-    if not isinstance(data, EllipticCurvePublicKey):
+    if not isinstance(pkey, EllipticCurvePublicKey):
         raise TypeError("Wrong types for arguments")
 
     return pkey.public_bytes(Encoding.X962, PublicFormat.CompressedPoint)
