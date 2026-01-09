@@ -1,4 +1,6 @@
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
+from cryptography.hazmat.primitives.serialization import (
+        Encoding, PublicFormat, PrivateFormat, NoEncryption, load_pem_private_key
+)
 from cryptography.x509 import (
         load_pem_x509_certificate, random_serial_number, Certificate, CertificateBuilder, Name, NameAttribute
 )
@@ -11,8 +13,31 @@ from cryptography.hazmat.primitives.asymmetric import ec, ed25519
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey, EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from datetime import datetime
+import datetime
 from pathlib import Path
+
+def save_edkey(path: Path, key: Ed25519PrivateKey):
+    """
+    Save an Ed25519PrivateKey to a given path
+
+    Args:
+        path (Path): path where the key is to be saved
+        key (Ed25519PrivateKey): key to save
+    Raises:
+        TypeError: if any argument is of the wrong type
+        Exception: for unexpected errors
+    """
+
+    if not isinstance(path, Path) or not isinstance(key, Ed25519PrivateKey):
+        raise TypeError("Wrong types for arguments")
+
+    try:
+        path.touch()
+
+        with path.open('w') as f:
+            f.write(key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()))
+    except Exception as e:
+        raise e
 
 def encode_certificate(certificate: Certificate) -> bytes:
     """
@@ -74,7 +99,7 @@ def load_signing_key(path: Path) -> Ed25519PrivateKey:
 
     try:
         with path.open() as f:
-            return load_pem_private_key(f.read(), b"")
+            return load_pem_private_key(f.read(), None)
     except Exception as e:
         raise e
 
@@ -122,7 +147,7 @@ def save_certificate(path: Path, certificate: Certificate) -> None:
     try:
         path.touch()
 
-        with path.open() as f:
+        with path.open('w') as f:
             f.write(certificate.public_bytes(Encoding.PEM))
     except Exception as e:
         raise e
@@ -169,9 +194,9 @@ def gen_certificate(country: str, state_or_province: str, locality: str, common_
         ).serial_number(
             random_serial_number()
         ).not_valid_before(
-            datetime.utcnow()
+            datetime.datetime.now(datetime.UTC)
         ).not_valid_after(
-            datetime.utcnow() + datetime.timedelta(days=duration)
+            datetime.datetime.now(datetime.UTC) + datetime.datetime.timedelta(days=duration)
         ).sign(
             skey, None
         )
@@ -196,7 +221,7 @@ def verify_certificate(certificate: Certificate, signature: bytes, nonce: bytes)
     if not isinstance(certificate, Certificate) or not all(isinstance(x, bytes) for x in (signature, nonce)):
         raise TypeError("Wrong types for arguments")
 
-    if certificate.not_valid_after_utc <= datetime.utcnow():
+    if certificate.not_valid_after_utc <= datetime.datetime.now(datetime.UTC):
         raise Warning("Certificate expired, acquire a new one as soon as possible")
 
     pkey = certificate.public_key()
