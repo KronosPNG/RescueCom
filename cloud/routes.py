@@ -54,7 +54,7 @@ def extract_emergency_fields(
             emergency_id=emergency_id,
             user_uuid=user_uuid,
             severity=severity,
-            created_at=datetime.datetime.now(),
+            created_at=datetime.datetime.now(datetime.UTC),
             routing_info_json=routing_info_json,
             blob=blob,
         )
