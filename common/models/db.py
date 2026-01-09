@@ -728,7 +728,7 @@ class DatabaseManager:
 
         update_query = """
             UPDATE encrypted_emergency
-            severity = ?, routing_info_json = ?, blob = ?, created_at = ?
+            SET severity = ?, routing_info_json = ?, blob = ?, created_at = ?
             WHERE user_uuid = ?, emergency_id = ?
         """
 
