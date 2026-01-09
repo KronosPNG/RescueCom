@@ -1,24 +1,30 @@
 import base64
 import json
+import os
 
-from typing import Optional, Dict, Any
+from pathlib import Path
+from typing import Optional, Any
 
 from flask import request, jsonify, Response
 
-from client import app, DEC_CIPHER, NONCE, CLOUD_NONCE
+import client
+from client import app
 from common.models.emergency import Emergency
 from common.services import crypto
+from . import network
 
+CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("CERTIFICATE_NAME", None))
+SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("SIGNING_KEY_NAME", None))
 
-def get_validated_json() -> tuple[Optional[Dict[str, Any]], Optional[tuple[Response, int]]]:
-    data: Optional[Dict[str, Any]] = request.get_json()
+def get_validated_json() -> tuple[Optional[dict[str, Any]], Optional[tuple[Response, int]]]:
+    data: Optional[dict[str, Any]] = request.get_json()
 
     if not data:
         return None, (jsonify({'error': 'No JSON data provided'}), 400)
 
     return data, None
 
-def decrypt_message(encrypted_b64: str) -> tuple[Optional[Dict[str, Any]], Optional[tuple[Response, int]]]:
+def decrypt_message(encrypted_b64: str) -> tuple[Optional[dict[str, Any]], Optional[tuple[Response, int]]]:
     if DEC_CIPHER is None or NONCE is None or CLOUD_NONCE is None:
         return None, (jsonify({'error': 'Client crypto not initialized'}), 500)
 
@@ -177,3 +183,20 @@ def rescuer_assignment() -> tuple[Response, int]:
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
+@app.route('/', methods=['GET'])
+def homepage() -> tuple[Response, int]:
+    """Initialize connection"""
+    try:
+        ec, dc, nonce, c_nonce = network.connect(client.UUID, SKEY_PATH, CERTIFICATE_PATH)
+
+        client.ENC_CIPHER = ec
+        client.DEC_CIPHER = dc
+        client.NONCE = nonce
+        client.CLOUD_NONCE = c_nonce
+
+        return jsonify({
+            'message': 'Cloud connection successful'
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500

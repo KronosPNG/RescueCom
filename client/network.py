@@ -34,6 +34,7 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
     nonce = os.urandom(12)
     signature = crypto.sign(skey, nonce)
 
+    # TODO: switch string to a proper name (maybe)
     resp = requests.post("http://localhost:8000/connect", json={"uuid": uuid, "nonce": nonce, "certificate": certificate, "signature": signature})
     if not resp.ok:
         raise Exception("Couldn't connect, switch to bluetooth")
@@ -41,9 +42,11 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
     data = resp.json()
 
     # raise KeyError
-    cloud_certificate = data["certificate"]
-    cloud_pkey = data["pkey"]
+    cloud_certificate_bytes = data["certificate"]
+    cloud_nonce = data["nonce"]
     cloud_signature = data["signature"]
+
+    cloud_certificate = crypto.decode_certificate(cloud_certificate_bytes)
 
     crypto.verify_certificate(cloud_certificate, cloud_signature, cloud_nonce)
 
