@@ -37,7 +37,7 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
     # TODO: switch string to a proper name (maybe)
     resp = requests.post("http://localhost:8000/connect", json={"uuid": uuid, "nonce": nonce, "certificate": certificate, "signature": signature})
     if not resp.ok:
-        raise Exception("Couldn't connect, switch to bluetooth")
+        raise Exception("Something went wrong")
 
     data = resp.json()
 
