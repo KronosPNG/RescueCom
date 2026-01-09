@@ -14,6 +14,9 @@ class SeverityType(Enum):
 
 class EmergencyQueue:
     __instance = None
+
+    min_medium_sev_score = 35
+    min_high_sev_score = 65
     queue: list[list[tuple[int, float, Emergency | EncryptedEmergency]],] = [
         [],
         [],
@@ -63,14 +66,15 @@ class EmergencyQueue:
         severity = emergency.severity
         created_at = -emergency.created_at.timestamp()
 
-        # TODO: Remove magic numbers
         # TODO: Establish the maximum possible score
-        if (severity >= 0) and (severity < 35):
+        if (severity >= 0) and (severity < self.min_medium_sev_score):
             heapq.heappush_max(
                 self.low_queue,
                 (severity, created_at, (emergency)),
             )
-        elif (severity >= 35) and (severity < 65):
+        elif (severity >= self.min_medium_sev_score) and (
+            severity < self.min_high_sev_score
+        ):
             heapq.heappush_max(
                 self.medium_queue,
                 (severity, created_at, emergency),
@@ -155,13 +159,17 @@ class EmergencyQueue:
 
             return index
 
-        if (old_emergency_severity >= 0) and (old_emergency_severity < 35):
+        if (old_emergency_severity >= 0) and (
+            old_emergency_severity < self.min_medium_sev_score
+        ):
             pos: int = linear_search(self.low_queue, emergency)
             if pos == -1:
                 raise ValueError("Old emergency not found")
 
             self.low_queue.pop(pos)
-        elif (old_emergency_severity >= 35) and (old_emergency_severity < 65):
+        elif (old_emergency_severity >= self.min_medium_sev_score) and (
+            old_emergency_severity < self.min_high_sev_score
+        ):
             pos: int = linear_search(self.medium_queue, emergency)
             if pos == -1:
                 raise ValueError("Old emergency not found")
