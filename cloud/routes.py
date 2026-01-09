@@ -38,7 +38,6 @@ def extract_emergency_fields(data: dict[str, Any]) -> tuple[
     blob: Optional[bytes] = data.get('blob')
     severity: Optional[int] = data.get('severity')
 
-    # Validate required fields
     if not emergency_id or not user_uuid:
         return None, (jsonify({'error': 'Missing required fields: emergency_id and user_uuid'}), 400)
 
@@ -97,7 +96,7 @@ def emergency_submit() -> tuple[Any, int]:
         if not client:
             raise Exception("Client not found")
 
-        decrypted_blob: bytes = crypto.decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
+        decrypted_blob: bytes = crypto.decrypt(client.dec_cipher, client.nonce, encrypted_emergency.blob, b"") # TODO: align with client about aad
         emergency: Emergency = Emergency.unpack(encrypted_emergency.emergency_id,
                                                 encrypted_emergency.user_uuid,
                                      decrypted_blob)
@@ -127,7 +126,6 @@ def emergency_accept() -> tuple[Any, int]:
         if not rescuer:
             raise Exception("Rescuer uuid not found")
 
-        # Send a message to the Rescuee associated with the request
         user_uuid: str = encrypted_emergency.user_uuid
 
         with cloud.status_lock:
@@ -136,32 +134,28 @@ def emergency_accept() -> tuple[Any, int]:
             else:
                 raise Exception("Client couldn't be found")
 
-        decrypted_blob: bytes = crypto.decrypt(rescuer.dec_cipher, rescuer.nonce, encrypted_emergency.blob, b"")  # TODO: align with client about aad
+        decrypted_blob: bytes = crypto.decrypt(rescuer.dec_cipher, rescuer.nonce, encrypted_emergency.blob, b"") # TODO: align with client about aad
 
-        # Create notification message
         message: dict[str, str] = {
             "type": "emergency_accepted",
             "emergency_id": encrypted_emergency.emergency_id,
             "timestamp": datetime.datetime.now().isoformat()
         }
 
-        # Encrypt the message for the client
         encrypted_message: bytes = crypto.encrypt(
             encrypted_emergency, client.cloud_nonce,
-            str(message).encode(), b""  # No additional authenticated data for now
+            str(message).encode(), b""
         )
 
-        # Send message to the client
         try:
             requests.post(
                 client.ip + "/notification/receive",
                 json={
                     "message": base64.b64encode(encrypted_message).decode(),
                 },
-                timeout=3  # Short timeout to avoid blocking
+                timeout=3
             )
         except Exception as msg_err:
-            # Log the error but continue with the main request
             app.logger.error(f"Failed to send notification: {str(msg_err)}")
 
         return jsonify({'message': 'Emergency accepted successfully', 'data': data}), 200
@@ -197,15 +191,12 @@ def emergency_delete() -> tuple[Any, int]:
         if error_response:
             return error_response
 
-        # Extract fields from request data
         user_uuid: Optional[str] = data.get('user_uuid')
         emergency_id: Optional[int] = data.get('emergency_id')
 
-        # Validate required fields
         if not user_uuid or not emergency_id:
             return jsonify({'error': 'Missing required fields: user_uuid and emergency_id'}), 400
 
-        # Delete the emergency from the database
         persistence.delete_encrypted_emergency(user_uuid, emergency_id)
 
         return jsonify({'message': 'Emergency deleted successfully', 'data': data}), 200
@@ -259,7 +250,6 @@ def user_delete() -> tuple[Any, int]:
 
         uuid: Optional[str] = data.get('uuid')
 
-        # Validate required fields
         if not uuid:
             return jsonify({'error': 'Missing required field: uuid'}), 400
 
@@ -280,9 +270,9 @@ def connect() -> tuple[Any, int]:
         cert_bytes: Optional[bytes] = data.get('certificate')
         client_nonce: Optional[bytes] = data.get('nonce')
         signature: Optional[str] = data.get('signature')
+        is_rescuer: Optional[bool] = data.get('is_rescuer')
 
-        # Validate required fields
-        if not uuid or not cert_bytes or not client_nonce or not signature:
+        if not uuid or not cert_bytes or not client_nonce or not signature or is_rescuer is None:
             return jsonify({'error': 'Missing required fields'}), 400
 
         client_certificate = crypto.decode_certificate(cert_bytes)
@@ -297,10 +287,15 @@ def connect() -> tuple[Any, int]:
 
         with cloud.status_lock:
             cloud.CLIENTS[uuid] = ClientDTO(
+                request.remote_addr,
+                None, None, client_nonce, nonce, is_rescuer,
+            )
+
+            if is_rescuer:
+                cloud.RESCUERS[uuid] = ClientDTO(
                     request.remote_addr,
-                    None, None, client_nonce, nonce,
-                    True, # TODO: how do we identify Rescuers?
-                    )
+                    None, None, client_nonce, nonce, is_rescuer,
+                )
 
         return jsonify({'message': 'Verification successful', 'certificate': certificate_bytes, 'nonce': nonce, 'signature': signature}), 200
     except Exception as e:
@@ -317,7 +312,6 @@ def pkey() -> tuple[Any, int]:
         uuid: Optional[str] = data.get('uuid')
         pkey_bytes: Optional[str] = data.get('public_key')
 
-        # Validate required fields
         if not uuid or not pkey_bytes:
             return jsonify({'error': 'Missing required fields'}), 400
 
@@ -335,6 +329,10 @@ def pkey() -> tuple[Any, int]:
 
             cloud.CLIENTS[uuid].enc_cipher = enc_cipher
             cloud.CLIENTS[uuid].dec_cipher = dec_cipher
+
+            if uuid in cloud.RESCUERS:
+                cloud.RESCUERS[uuid].enc_cipher = enc_cipher
+                cloud.RESCUERS[uuid].dec_cipher = dec_cipher
 
         return jsonify({'message': 'Key exchange completed', 'pkey': crypto.encode_ecdh_pkey(pkey)}), 200
     except Exception as e:
