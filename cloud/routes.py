@@ -172,7 +172,7 @@ def emergency_accept() -> tuple[Any, int]:
         message: dict[str, str] = {
             "type": "emergency_accepted",
             "emergency_id": encrypted_emergency.emergency_id,
-            "timestamp": datetime.datetime.now().isoformat(),
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
         }
 
         encrypted_message: bytes = crypto.encrypt(
