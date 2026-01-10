@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
 from flask import Flask
 from dotenv import load_dotenv
 
-load_dotenv(__file__[:__file__.rfind('/')] + '/.env')
+load_dotenv(Path(__file__).parent / '.env')
 
 UUID: Optional[str] = None
 DEC_CIPHER: Optional[AESGCMSIV] = None
@@ -24,6 +24,7 @@ CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("CE
 
 def init_info():
     if not DATA_PATH.exists():
+        DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.touch()
 
         with DATA_PATH.open('w') as f:
@@ -34,8 +35,10 @@ def init_info():
             UUID = line[line.index('=')+2:]
 
 def init_certificate_and_skey():
-    if not SKEY_PATH.exists():
+    if not SKEY_PATH.exists() or not CERTIFICATE_PATH.exists():
+        SKEY_PATH.parent.mkdir(parents=True, exist_ok=True)
         SKEY_PATH.touch()
+        CERTIFICATE_PATH.touch()
 
         skey, certificate = crypto.gen_certificate("IT", "Salerno", "Fisciano", "Luigi Turco")
 
@@ -43,6 +46,7 @@ def init_certificate_and_skey():
         crypto.save_edkey(SKEY_PATH, skey)
 
     else:
+
         certificate = crypto.load_certificate(CERTIFICATE_PATH)
 
         if certificate.not_valid_after_utc <= datetime.datetime.now(datetime.UTC):
