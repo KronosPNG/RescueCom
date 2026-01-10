@@ -286,7 +286,7 @@ def encode_ecdh_pkey(pkey: EllipticCurvePublicKey) -> bytes:
         TypeError: if any argument is of the wrong type
     """
 
-    if not isinstance(data, EllipticCurvePublicKey):
+    if not isinstance(pkey, EllipticCurvePublicKey):
         raise TypeError("Wrong types for arguments")
 
     return pkey.public_bytes(Encoding.X962, PublicFormat.CompressedPoint)

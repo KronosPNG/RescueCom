@@ -54,7 +54,8 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path, is_rescuer: bool
 
     cloud_certificate = crypto.decode_certificate(cloud_certificate_bytes)
 
-    crypto.verify_certificate(cloud_certificate, cloud_signature, cloud_nonce)
+    if not crypto.verify_certificate(cloud_certificate, cloud_signature, cloud_nonce):
+        raise Exception("Cloud's certificate verification failed")
 
     skey, pkey = crypto.gen_ecdh_keys()
     encoded_pkey = crypto.encode_ecdh_pkey(pkey)
