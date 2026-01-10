@@ -152,7 +152,7 @@ def save_certificate(path: Path, certificate: Certificate) -> None:
     except Exception as e:
         raise e
 
-def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> tuple[Certificate, Ed25519PrivateKey]:
+def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> tuple[Ed25519PrivateKey, Certificate]:
     """
     Generate a self-signed certificate to authenticate
 
@@ -171,6 +171,9 @@ def gen_certificate(country: str, state_or_province: str, locality: str, common_
 
     if not all(isinstance(x, str) for x in (country, state_or_province, locality, common_name)) or not isinstance(duration, int):
         raise TypeError("Wrong types for arguments")
+
+    if len(country) != 2:
+        raise ValueError("Country length must be exactly 2")
 
     if duration < 1:
         raise ValueError("Duration should be 1 or more days")
