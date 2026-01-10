@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">{% if sent_emergency %}Modifica{% else %}Invia{% endif %} Richiesta di Soccorso</h3>
+        </div>
+        <div class="card-body">
+          <form action="" method="POST">
+            <input type="hidden" name="severity" id="severity" value="{{ sent_emergency.severity if sent_emergency else '0' }}">
+            <input type="hidden" name="details_json" id="details_json" value="{{ sent_emergency.details_json if sent_emergency else '' }}">
+            <input type="hidden" name="photo_b64" id="photo_b64" value="{{ sent_emergency.photo_b64 if sent_emergency else '' }}">
+
+            <div class="mb-3">
+              <label for="emergency_type" class="form-label fw-bold">Tipo di emergenza <span class="text-danger">*</span></label>
+              <select class="form-select" id="emergency_type" name="emergency_type" required>
+                <option value="" {% if not sent_emergency %}selected{% endif %} disabled>Seleziona il tipo...</option>
+                {% set options = ["Trauma Fisico", "Problemi Respiratori", "Crollo/Macerie", "Incendio", "Alluvione", "Altro"] %}
+                {% for opt in options %}
+                <option value="{{ opt }}" {% if sent_emergency and sent_emergency.emergency_type == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label fw-bold">Descrizione <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="description" name="description" rows="3" placeholder="Descrivi brevemente la situazione..." required>{{ sent_emergency.description if sent_emergency else '' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Posizione</label>
+              
+              <div class="form-check form-switch mb-3" id="location-toggle-container">
+                <input class="form-check-input" type="checkbox" id="use-address" role="switch" {% if sent_emergency and sent_emergency.address %}checked{% endif %}>
+                <label class="form-check-label" for="use-address">Usa indirizzo invece di coordinate</label>
+              </div>
+
+              <div id="coordinate-section" style="{% if sent_emergency and sent_emergency.address %}display: none;{% endif %}">
+                <label for="position" class="form-label">Coordinate</label>
+                <div class="input-group mb-2">
+                  <input type="text" class="form-control" id="position" name="position" placeholder="Lat, Lng" readonly value="{% if sent_emergency and sent_emergency.position %}{{ sent_emergency.position[0] }},{{ sent_emergency.position[1] }}{% endif %}">
+                  <button class="btn btn-outline-secondary" type="button" id="btn-geo">
+                    <i class="bi bi-geo-fill"></i> Usa GPS
+                  </button>
+                </div>
+                <div id="map" class="border rounded" style="height: 300px; background-color: #eee;"></div>
+                <div class="form-text">Clicca sulla mappa per affinare la posizione o usa il pulsante.</div>
+              </div>
+
+              <div id="address-section" style="{% if not sent_emergency or not sent_emergency.address %}display: none;{% endif %}">
+                <div class="row">
+                  <div class="col-md-8 mb-2">
+                    <label for="address" class="form-label">Indirizzo</label>
+                    <input type="text" class="form-control" id="address" name="address" placeholder="Via/Piazza..." value="{{ sent_emergency.address if sent_emergency else '' }}">
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <label for="street_number" class="form-label">Numero civico</label>
+                    <input type="text" class="form-control" id="street_number" name="street_number" placeholder="N°" value="{{ sent_emergency.street_number if sent_emergency else '' }}">
+                  </div>
+                </div>
+                <div class="mb-2">
+                  <label for="city" class="form-label">Città</label>
+                  <input type="text" class="form-control" id="city" name="city" placeholder="Città" value="{{ sent_emergency.city if sent_emergency else '' }}">
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="place_description" class="form-label fw-bold">Descrizione del posto</label>
+              <textarea class="form-control" id="place_description" name="place_description" rows="2" placeholder="Es: vicino al supermercato, edificio rosso...">{{ sent_emergency.place_description if sent_emergency else '' }}</textarea>
+              <div class="form-text">Fornisci dettagli aggiuntivi per facilitare l'individuazione.</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="file-upload" class="form-label fw-bold">Foto</label>
+              <input class="form-control" type="file" id="file-upload" accept="image/*">
+              <div id="image-preview" class="mt-2">
+                {% if sent_emergency and sent_emergency.photo_b64 %}
+                <img src="data:image/jpeg;base64,{{ sent_emergency.photo_b64 }}" class="img-fluid rounded" style="max-height: 200px">
+                <div class="text-muted small mt-1">Immagine caricata precedentemente</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <hr class="my-4">
+            
+            <h4 class="mb-3">Valutazione Priorità</h4>
+            <p class="text-muted small">Seleziona le opzioni pertinenti per calcolare la priorità dell'intervento.</p>
+
+            <div class="card mb-3 border-danger">
+              <div class="card-header bg-danger text-white d-flex align-items-center">
+                <i class="bi bi-1-circle-fill me-2 bg-white text-danger rounded-circle"></i>
+                <span class="fw-bold">Traumi fisici</span>
+              </div>
+              <div class="card-body">
+                <h6 class="text-danger fw-bold"><i class="bi bi-droplet-fill"></i> Sanguinamento</h6>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="10" id="check-sanguinamento-grave">
+                  <label class="form-check-label" for="check-sanguinamento-grave">Sanguinamento abbondante / arterioso</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="5" id="check-sanguinamento-lieve">
+                  <label class="form-check-label" for="check-sanguinamento-lieve">Sanguinamento lieve / ferite superficiali</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="8" id="check-frattura-esposta">
+                  <label class="form-check-label" for="check-frattura-esposta">Frattura esposta visibile</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="6" id="check-trauma-cranico">
+                  <label class="form-check-label" for="check-trauma-cranico">Trauma cranico / confusione</label>
+                </div>
+
+                <h6 class="text-danger fw-bold mt-3"><i class="bi bi-bandaid"></i> Arti bloccati</h6>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="8" id="check-incastrato-macerie">
+                  <label class="form-check-label" for="check-incastrato-macerie">Persona incastrata sotto macerie/pesi</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="5" id="check-arto-bloccato">
+                  <label class="form-check-label" for="check-arto-bloccato">Arto bloccato ma persona cosciente</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-3 border-warning">
+              <div class="card-header bg-warning text-dark d-flex align-items-center">
+                <i class="bi bi-2-circle-fill me-2 bg-white text-warning rounded-circle"></i>
+                <span class="fw-bold">Difficoltà respiratorie</span>
+              </div>
+              <div class="card-body">
+                <h6 class="text-warning fw-bold"><i class="bi bi-lungs"></i> Respirazione limitata</h6>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="10" id="check-non-respira">
+                  <label class="form-check-label" for="check-non-respira">Non respira / arresto respiratorio</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="8" id="check-respira-fatica">
+                  <label class="form-check-label" for="check-respira-fatica">Respira con molta fatica / rantoli</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input score-check" type="checkbox" value="6" id="check-fumo-inalato">
+                  <label class="form-check-label" for="check-fumo-inalato">Inalazione fumo / tosse forte</label>
+                </div>
+              </div>
+            </div>
+
+             <div class="card mb-3 border-dark">
+               <div class="card-header bg-secondary text-white d-flex align-items-center">
+                 <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>
+                 <span class="fw-bold">Pericolo Ambientale</span>
+               </div>
+               <div class="card-body">
+                 <h6 class="text-secondary fw-bold">Situazione circostante</h6>
+                 <div class="form-check">
+                   <input class="form-check-input score-check" type="checkbox" value="8" id="check-incendio-attivo">
+                   <label class="form-check-label" for="check-incendio-attivo">Incendio attivo nelle vicinanze</label>
+                 </div>
+                 <div class="form-check">
+                   <input class="form-check-input score-check" type="checkbox" value="7" id="check-rischio-crollo">
+                   <label class="form-check-label" for="check-rischio-crollo">Edificio pericolante / rischio crollo</label>
+                 </div>
+                 <div class="form-check">
+                   <input class="form-check-input score-check" type="checkbox" value="6" id="check-acqua-alta">
+                   <label class="form-check-label" for="check-acqua-alta">Acqua alta / alluvione in corso</label>
+                 </div>
+               </div>
+             </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg">{% if sent_emergency %}Salva modifiche{% else %}Invia segnalazione{% endif %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet Map Scripts -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // === Map Initialization ===
+    var map, marker;
+    var positionInput = document.getElementById('position');
+    var mapAvailable = false;
+    // Default coords (Italy) or loaded coords
+    var initialLat = 41.9028;
+    var initialLng = 12.4964;
+    var hasInitialPos = false;
+
+    // Check if we have an existing position
+    if (positionInput.value && positionInput.value.includes(',')) {
+        var parts = positionInput.value.split(',');
+        initialLat = parseFloat(parts[0]);
+        initialLng = parseFloat(parts[1]);
+        hasInitialPos = true;
+    }
+
+    if (typeof L !== 'undefined') {
+      try {
+        map = L.map('map').setView([initialLat, initialLng], hasInitialPos ? 15 : 5);
+        
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        if (hasInitialPos) {
+            marker = L.marker([initialLat, initialLng]).addTo(map);
+        }
+
+        map.on('click', function(e) {
+          updatePosition(e.latlng.lat, e.latlng.lng);
+        });
+        
+        mapAvailable = true;
+      } catch (error) {
+        console.error("Leaflet error:", error);
+        document.getElementById('map').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted">Mappa non disponibile</div>';
+      }
+    } else {
+        document.getElementById('map').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted">Mappa non disponibile</div>';
+    }
+    
+    if (!mapAvailable) {
+      // Force address if map fails
+      document.getElementById('use-address').checked = true;
+      document.getElementById('use-address').disabled = true;
+      toggleLocationMode(true);
+    }
+
+    function updatePosition(lat, lng) {
+      positionInput.value = lat.toFixed(6) + "," + lng.toFixed(6);
+      if (map && typeof L !== 'undefined') {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map);
+        map.setView([lat, lng], 15);
+      }
+    }
+
+    document.getElementById('btn-geo').addEventListener('click', function() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          updatePosition(position.coords.latitude, position.coords.longitude);
+        }, function(error) {
+          alert("Impossibile recuperare la posizione: " + error.message);
+        });
+      } else {
+        alert("Geolocalizzazione non supportata.");
+      }
+    });
+
+    // === Address vs Coordinates Toggle ===
+    function toggleLocationMode(useAddress) {
+      var coordinateSection = document.getElementById('coordinate-section');
+      var addressSection = document.getElementById('address-section');
+      
+      if (useAddress) {
+        coordinateSection.style.display = 'none';
+        addressSection.style.display = 'block';
+      } else {
+        coordinateSection.style.display = 'block';
+        addressSection.style.display = 'none';
+        // Resize map when it becomes visible
+        if (map) setTimeout(function(){ map.invalidateSize(); }, 200);
+      }
+    }
+
+    document.getElementById('use-address').addEventListener('change', function() {
+      toggleLocationMode(this.checked);
+    });
+
+    // === Base64 Image Upload ===
+    document.getElementById('file-upload').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (file) {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+          // Keep only the base64 part, depending on backend requirement. 
+          // Usually 'data:image/jpeg;base64,...' is fine for displaying, 
+          // but strictly 'base64' might be needed. 
+          // The prompt example says: photo_b64 - "UmVzY3VlQ29t..." (this looks like raw base64 without prefix)
+          var result = reader.result; 
+          // Remove prefix logic:
+          var base64Data = result.split(',')[1];
+          document.getElementById('photo_b64').value = base64Data;
+          
+          // Preview
+          var preview = document.getElementById('image-preview');
+          preview.innerHTML = '<img src="' + result + '" class="img-fluid rounded" style="max-height: 200px">';
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // === Score & Details Calculation ===
+    const checkboxes = document.querySelectorAll('.score-check');
+    const scoreInput = document.getElementById('severity');
+    const detailsInput = document.getElementById('details_json');
+
+    // 1. Populate checkboxes from existing JSON if editing
+    try {
+        if (detailsInput.value) {
+            // Unescape potential python string dump issues if necessary, but Jinja usually renders proper string
+            // Assuming the value in input is a valid JSON string like {"Categoria":{"Question":"Label"}}
+            // NOTE: Jinja rendering of dict might use single quotes which isn't valid JSON. 
+            // Ideally we need a filter | tojson. Without it, we might get {'Key': 'Val'}.
+            // Let's assume valid JSON or replace quotes.
+            let jsonStr = detailsInput.value.replace(/'/g, '"'); // simple fix for Python dict string
+            const savedDetails = JSON.parse(jsonStr);
+
+            // Iterate checkboxes and see if their label exists in savedDetails
+            checkboxes.forEach(cb => {
+                const label = cb.parentElement.querySelector('label').innerText;
+                // We need to find if this label is a VALUE in the savedDetails
+                // savedDetails structure: { Category: { Question: Label } }
+                // So we check all values of all nested objects
+                let isChecked = false;
+                for (const cat in savedDetails) {
+                    for (const q in savedDetails[cat]) {
+                        if (savedDetails[cat][q] === label) {
+                            isChecked = true;
+                            break;
+                        }
+                    }
+                }
+                if (isChecked) cb.checked = true;
+            });
+        }
+    } catch (e) {
+        console.warn("Could not parse details_json for pre-filling", e);
+    }
+
+    function updateScoreAndDetails() {
+      let score = 0;
+      let details = {};
+
+      checkboxes.forEach(cb => {
+        if (cb.checked) {
+          score += parseInt(cb.value);
+
+          // Details extraction
+          try {
+            const label = cb.parentElement.querySelector('label').innerText;
+            
+            // Find question (h6 previous sibling)
+            let sibling = cb.parentElement.previousElementSibling;
+            let question = "Generico";
+            // Look upwards for nearest h6
+            // In the HTML structure: card-body -> h6, div, div...
+            // So we look at siblings before the parent div of the checkbox?
+            // Actually the structure is card-body > h6, card-body > div(form-check). 
+            // So previous siblings of the form-check div.
+            let el = cb.parentElement.previousElementSibling;
+            while (el) {
+                if (el.tagName === 'H6') {
+                    question = el.innerText.trim();
+                    break;
+                }
+                el = el.previousElementSibling;
+            }
+
+            // Find Category (card header)
+            const cardBody = cb.parentElement.parentElement;
+            const cardHeader = cardBody.previousElementSibling;
+            let category = "Generale";
+            if (cardHeader) {
+                const headerSpan = cardHeader.querySelector('span.fw-bold');
+                if (headerSpan) category = headerSpan.innerText.trim();
+            }
+
+            if (!details[category]) details[category] = {};
+            details[category][question] = label;
+            
+          } catch (e) {
+            console.error("Error extracting details", e);
+          }
+        }
+      });
+      
+      scoreInput.value = score;
+      detailsInput.value = JSON.stringify(details);
+    }
+
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', updateScoreAndDetails);
+    });
+    
+    // Initial calculation if editing
+    updateScoreAndDetails();
+
+    // === Form Submit Logic ===
+    document.querySelector('form').addEventListener('submit', function() {
+      // Remove unused location fields based on selection
+      var useAddress = document.getElementById('use-address').checked;
+      
+      if (useAddress) {
+        document.getElementById('position').disabled = true; // disable to not send
+      } else {
+        document.getElementById('address').disabled = true;
+        document.getElementById('street_number').disabled = true;
+        document.getElementById('city').disabled = true;
+      }
+    });
+
+  });
+</script>
+
+{% endblock %}
