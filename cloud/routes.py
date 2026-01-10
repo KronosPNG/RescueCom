@@ -39,7 +39,7 @@ def extract_emergency_fields(
     emergency_id: Optional[int] = data.get("emergency_id")
     user_uuid: Optional[str] = data.get("user_uuid")
     routing_info_json: Optional[str] = data.get("routing_info_json")
-    blob: Optional[bytes] = data.get("blob")
+    blob_b64: Optional[str] = data.get("blob")
     severity: Optional[int] = data.get("severity")
 
     if not emergency_id or not user_uuid:
@@ -56,7 +56,7 @@ def extract_emergency_fields(
             severity=severity,
             created_at=datetime.datetime.now(datetime.UTC),
             routing_info_json=routing_info_json,
-            blob=blob,
+            blob=base64.b64decode(blob.encode()),
         )
     )
 
@@ -151,8 +151,8 @@ def emergency_accept() -> tuple[Any, int]:
 
         rescuer = None
         with cloud.status_lock:
-            if data["uuid"] in cloud.RESCUERS:
-                rescuer = cloud.RESCUERS[data["uuid"]]
+            if data.get("uuid") in cloud.RESCUERS:
+                rescuer = cloud.RESCUERS[data.get("uuid")]
 
         if not rescuer:
             raise Exception("Rescuer uuid not found")
@@ -308,10 +308,10 @@ def connect() -> tuple[Any, int]:
             return error_response
 
         uuid: Optional[str] = data.get("uuid")
-        cert_bytes: Optional[bytes] = data.get("certificate")
-        client_nonce: Optional[bytes] = data.get("nonce")
-        signature: Optional[str] = data.get("signature")
-        is_rescuer: Optional[bool] = data.get("is_rescuer")
+        cert_bytes = data.get("certificate")
+        client_nonce = data.get("nonce")
+        signature = data.get("signature")
+        is_rescuer: Optional[bool] = data.dict.get("is_rescuer")
 
         if (
             not uuid
@@ -321,6 +321,10 @@ def connect() -> tuple[Any, int]:
             or is_rescuer is None
         ):
             return jsonify({"error": "Missing required fields"}), 400
+
+        cert_bytes = bytes.fromhex(cert_bytes)
+        nonce = bytes.fromhex(client_nonce)
+        signature = bytes.fromhex(signature)
 
         client_certificate = crypto.decode_certificate(cert_bytes)
         if not crypto.verify_certificate(client_certificate, signature, client_nonce):
@@ -355,9 +359,9 @@ def connect() -> tuple[Any, int]:
         return jsonify(
             {
                 "message": "Verification successful",
-                "certificate": certificate_bytes,
-                "nonce": nonce,
-                "signature": signature,
+                "certificate": certificate_bytes.hex(),
+                "nonce": nonce.hex(),
+                "signature": signature.hex(),
             }
         ), 200
     except Exception as e:
@@ -373,11 +377,12 @@ def pkey() -> tuple[Any, int]:
             return error_response
 
         uuid: Optional[str] = data.get("uuid")
-        pkey_bytes: Optional[str] = data.get("public_key")
+        pkey_bytes = data.get("public_key")
 
         if not uuid or not pkey_bytes:
             return jsonify({"error": "Missing required fields"}), 400
 
+        pkey_bytes = bytes.fromhex(pkey_bytes)
         client_pkey = crypto.decode_ecdh_pkey(pkey_bytes)
 
         skey, pkey = gen_ecdh_keys()
