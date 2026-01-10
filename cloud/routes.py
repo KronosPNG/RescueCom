@@ -311,7 +311,7 @@ def connect() -> tuple[Any, int]:
         cert_bytes = data.get("certificate")
         client_nonce = data.get("nonce")
         signature = data.get("signature")
-        is_rescuer: Optional[bool] = data.dict.get("is_rescuer")
+        is_rescuer: Optional[bool] = data.get("is_rescuer")
 
         if (
             not uuid
