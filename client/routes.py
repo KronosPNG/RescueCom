@@ -13,8 +13,6 @@ from common.models.emergency import Emergency
 from common.services import crypto
 from . import network
 
-CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("CERTIFICATE_NAME", None))
-SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("SIGNING_KEY_NAME", None))
 
 def get_validated_json() -> tuple[Optional[dict[str, Any]], Optional[tuple[Response, int]]]:
     data: Optional[dict[str, Any]] = request.get_json()
@@ -187,7 +185,7 @@ def rescuer_assignment() -> tuple[Response, int]:
 def homepage() -> tuple[Response, int]:
     """Initialize connection"""
     try:
-        ec, dc, nonce, c_nonce = network.connect(client.UUID, SKEY_PATH, CERTIFICATE_PATH)
+        ec, dc, nonce, c_nonce = network.connect(client.UUID, client.SKEY_PATH, client.CERTIFICATE_PATH)
 
         client.ENC_CIPHER = ec
         client.DEC_CIPHER = dc
