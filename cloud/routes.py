@@ -310,7 +310,7 @@ def connect() -> tuple[Any, int]:
         uuid: Optional[str] = data.get("uuid")
         cert_bytes = data.get("certificate")
         client_nonce = data.get("nonce")
-        signature = data.get("signature")
+        client_signature = data.get("signature")
         is_rescuer: Optional[bool] = data.get("is_rescuer")
 
         if (
@@ -323,11 +323,11 @@ def connect() -> tuple[Any, int]:
             return jsonify({"error": "Missing required fields"}), 400
 
         cert_bytes = bytes.fromhex(cert_bytes)
-        nonce = bytes.fromhex(client_nonce)
-        signature = bytes.fromhex(signature)
+        client_nonce = bytes.fromhex(client_nonce)
+        client_signature = bytes.fromhex(signature)
 
         client_certificate = crypto.decode_certificate(cert_bytes)
-        if not crypto.verify_certificate(client_certificate, signature, client_nonce):
+        if not crypto.verify_certificate(client_certificate, client_signature, client_nonce):
             return jsonify({"error": "Couldn't verify certificate or signature"}), 400
 
         certificate = crypto.load_certificate(CERTIFICATE_PATH)
