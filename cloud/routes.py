@@ -317,14 +317,14 @@ def connect() -> tuple[Any, int]:
             not uuid
             or not cert_bytes
             or not client_nonce
-            or not signature
+            or not client_signature
             or is_rescuer is None
         ):
             return jsonify({"error": "Missing required fields"}), 400
 
         cert_bytes = bytes.fromhex(cert_bytes)
         client_nonce = bytes.fromhex(client_nonce)
-        client_signature = bytes.fromhex(signature)
+        client_signature = bytes.fromhex(client_signature)
 
         client_certificate = crypto.decode_certificate(cert_bytes)
         if not crypto.verify_certificate(client_certificate, client_signature, client_nonce):
