@@ -23,6 +23,8 @@ SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("SIGNING_K
 CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("CERTIFICATE_NAME", None))
 
 def init_info():
+    global UUID
+
     if not DATA_PATH.exists():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.touch()
@@ -35,6 +37,8 @@ def init_info():
             UUID = line[line.index('=')+2:]
 
 def init_certificate_and_skey():
+    global SKEY_PATH, CERTIFICATE_PATH
+
     if not SKEY_PATH.exists() or not CERTIFICATE_PATH.exists():
         SKEY_PATH.parent.mkdir(parents=True, exist_ok=True)
         SKEY_PATH.touch()
@@ -58,6 +62,7 @@ def init_certificate_and_skey():
 
 init_info()
 init_certificate_and_skey()
+
 
 app = Flask(__name__)
 
