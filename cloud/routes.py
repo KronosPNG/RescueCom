@@ -377,11 +377,11 @@ def pkey() -> tuple[Any, int]:
         pkey_bytes = bytes.fromhex(pkey_bytes)
         client_pkey = crypto.decode_ecdh_pkey(pkey_bytes)
 
-        skey, pkey = gen_ecdh_keys()
+        skey, pkey = crypto.gen_ecdh_keys()
 
-        key = derive_shared_key(skey, client_pkey)
+        key = crypto.derive_shared_key(skey, client_pkey)
 
-        enc_cipher, dec_cipher = get_ciphers(key)
+        enc_cipher, dec_cipher = crypto.get_ciphers(key)
 
         with cloud.status_lock:
             if not uuid in cloud.CLIENTS:
