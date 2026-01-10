@@ -34,17 +34,22 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
     nonce = os.urandom(12)
     signature = crypto.sign(skey, nonce)
 
+    certificate_bytes = crypto.encode_certificate(certificate)
+
     # TODO: switch string to a proper name (maybe)
-    resp = requests.post("http://localhost:8000/connect", json={"uuid": uuid, "nonce": nonce, "certificate": certificate, "signature": signature})
+    resp = requests.post("http://localhost:8000/connect", json={
+            "uuid": uuid, "nonce": nonce.hex(), "certificate": certificate_bytes.hex(), "signature": signature.hex()
+        }
+    )
     if not resp.ok:
         raise Exception("Something went wrong")
 
     data = resp.json()
 
     # raise KeyError
-    cloud_certificate_bytes = data["certificate"]
-    cloud_nonce = data["nonce"]
-    cloud_signature = data["signature"]
+    cloud_certificate_bytes = bytes.fromhex(data["certificate"])
+    cloud_nonce = bytes.fromhex(data["nonce"])
+    cloud_signature = bytes.fromhex(data["signature"])
 
     cloud_certificate = crypto.decode_certificate(cloud_certificate_bytes)
 
@@ -53,14 +58,14 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
     skey, pkey = crypto.gen_ecdh_keys()
     encoded_pkey = crypto.encode_ecdh_pkey(pkey)
 
-    resp = requests.post("http://localhost:8000/pkey", json={"uuid": uuid, "public_key": encoded_pkey})
+    resp = requests.post("http://localhost:8000/pkey", json={"uuid": uuid, "public_key": encoded_pkey.hex()})
     if not resp.ok:
         raise Exception("Something went wrong")
 
     data = resp.json()
 
     # raises KeyError
-    cloud_pkey = crypto.decode_ecdh_pkey(data["pkey"])
+    cloud_pkey = crypto.decode_ecdh_pkey(bytes.fromhex(data["pkey"]))
 
     key = crypto.derive_shared_key(skey, cloud_pkey)
 
