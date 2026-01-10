@@ -3,7 +3,6 @@ import { renderFeed } from './modules/ui.js';
 
 // Configuration
 const REFRESH_INTERVAL = 10000; // 10 seconds
-// Note: Set up API polling here when backend is ready
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,14 +12,60 @@ document.addEventListener('DOMContentLoaded', () => {
 function init() {
     console.log('RescueCom Dashboard Initializing...');
 
-    // Initial Render (will be empty usually)
-    updateDashboard();
+    // Render JSON details for SSR pages
+    renderJsonDetails();
 
-    // Siumulate initial API fetch
-    fetchApiData();
+    // Only run Client-Side Fetching if we are on the legacy CSR dashboard
+    // We check if the feed containers exist
+    if (document.getElementById('feed-grave')) {
+        // Initial Render
+        updateDashboard();
+        // Siumulate initial API fetch
+        fetchApiData();
+        // Poll every 5 seconds
+        setInterval(fetchApiData, REFRESH_INTERVAL);
+    }
+}
 
-    // Poll every 5 seconds
-    setInterval(fetchApiData, REFRESH_INTERVAL);
+function renderJsonDetails() {
+    document.querySelectorAll('[data-json]').forEach(el => {
+        try {
+            // Avoid double rendering if called multiple times
+            if (el.dataset.rendered) return;
+
+            const rawJson = el.dataset.json;
+            if (!rawJson || rawJson === 'None' || rawJson === 'null') return;
+
+            const data = JSON.parse(rawJson);
+            if (!data || Object.keys(data).length === 0) return;
+
+            const createList = (obj) => {
+                const ul = document.createElement('ul');
+                ul.style.marginTop = '5px';
+                ul.style.paddingLeft = '20px';
+
+                for (const [key, value] of Object.entries(obj)) {
+                    const li = document.createElement('li');
+                    li.style.marginBottom = '2px';
+                    li.innerHTML = `<strong>${key}:</strong> `;
+
+                    if (typeof value === 'object' && value !== null) {
+                        li.appendChild(createList(value));
+                    } else {
+                        li.innerHTML += `<span style="color: #334155;">${value}</span>`;
+                    }
+                    ul.appendChild(li);
+                }
+                return ul;
+            };
+
+            el.appendChild(createList(data));
+            el.dataset.rendered = 'true';
+
+        } catch (e) {
+            console.warn('Error parsing JSON details for element:', el, e);
+        }
+    });
 }
 
 // --- Real API Integration ---

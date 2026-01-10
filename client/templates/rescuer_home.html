@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ricezione richieste di soccorso - RescueCom</title>
+    <!-- Icone Bootstrap -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='lib/bootstrap-icons/bootstrap-icons.css') }}">
+    <!-- Foglio di stile personalizzato per la dashboard SSR -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+
+<body>
+
+    <!-- Intestazione (Header) -->
+    <header>
+        <div class="header-right">
+            <a href="#" class="btn-switch-mode">
+                <i class="bi bi-person-fill-gear"></i> Passa a Rescuee
+            </a>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Barra Laterale (Sidebar) -->
+        <aside class="sidebar">
+            <div style="padding: 20px 25px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <div
+                    style="font-weight: 800; font-size: 1.5rem; color: #fff; display: flex; align-items: center; letter-spacing: -0.5px;">
+                    <i class="bi bi-shield-plus" style="color: #ef4444; margin-right: 10px; font-size: 1.8rem;"></i>
+                    RescueCom
+                </div>
+            </div>
+
+            <div class="sidebar-item active" style="justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <i class="bi bi-broadcast-pin" style="margin-right: 10px; font-size: 1.2rem;"></i>
+                    Ricezione richieste
+                </div>
+                <span class="badge bg-danger rounded-pill" style="font-size: 0.75rem;">{{ emergencies|length }}</span>
+            </div>
+        </aside>
+
+        <!-- Contenuto Principale -->
+        <main class="content">
+            <h1>Ciao, {{ user.name }}</h1>
+            <p style="margin-bottom: 30px; color: #666;">Ecco le richieste di soccorso in arrivo.</p>
+
+            {% if emergencies %}
+            {% for emergency in emergencies|sort(attribute='severity', reverse=True) %}
+            <details
+                class="request-card priority-{{ 'high' if emergency.severity > 66 else 'medium' if emergency.severity > 33 else 'low' }}">
+                <summary>
+                    <div class="summary-content">
+                        <div class="summary-header">
+                            <span class="card-time">{{ emergency.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                            <span class="badge {{ 'bg-success' if emergency.resolved else 'bg-warning text-dark' }}"
+                                style="font-size: 0.8rem; padding: 4px 8px; border-radius: 4px;">
+                                {{ 'Accettata' if emergency.resolved else 'In attesa' }}
+                            </span>
+                        </div>
+                        <div class="card-title">{{ emergency.emergency_type }}</div>
+                        <div class="card-preview">{{ emergency.description }}</div>
+                    </div>
+                    <i class="bi bi-caret-down-fill" style="margin-left: 10px; color: #64748b;"></i>
+                </summary>
+
+                <div class="card-details">
+                    <div class="info-grid">
+                        <div class="info-col">
+                            <div class="info-group">
+                                <div class="info-label">Dettagli Emergenza</div>
+                                <div class="info-value">
+                                    <strong>Priorità:</strong> {{ emergency.severity }}<br>
+                                    <strong>Data:</strong> {{ emergency.created_at.strftime('%d/%m/%Y %H:%M') }}<br>
+                                    <strong>Stato:</strong> {{ 'Risolta' if emergency.resolved else 'In attesa' }}
+                                </div>
+                            </div>
+                            <div class="info-group">
+                                <div class="info-label">Luogo</div>
+                                <div class="info-value">
+                                    {{ emergency.address }} {{ emergency.street_number }}, {{ emergency.city }}<br>
+                                    <small style="color: #666;">{{ emergency.place_description }}</small><br>
+                                    <small style="font-family: monospace;">Lat: {{ emergency.position[0] }}, Lon: {{
+                                        emergency.position[1] }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-col">
+                            <div class="info-group">
+                                <div class="info-label">Multimedia</div>
+                                {% if emergency.photo_b64 %}
+                                {% set mime_type = 'png' if emergency.photo_b64.startswith('iVB') else 'jpeg' %}
+                                <img src="data:image/{{ mime_type }};base64,{{ emergency.photo_b64 }}"
+                                    alt="Img not found"
+                                    style="max-width: 100%; border-radius: 6px; border: 1px solid #ddd;"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                                <div
+                                    style="display:none; padding: 20px; background: #f1f5f9; border-radius: 6px; text-align: center; color: #64748b;">
+                                    Img not found
+                                </div>
+                                {% else %}
+                                <div
+                                    style="padding: 20px; background: #f1f5f9; border-radius: 6px; text-align: center; color: #64748b;">
+                                    Img not found
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="info-group">
+                                <div class="info-label">Dettagli Aggiuntivi</div>
+                                <div data-json='{{ emergency.details_json }}'></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-bar">
+                        <form method="POST" action="">
+                            <button type="submit" name="emergency_id" value="{{ emergency.emergency_id }}"
+                                class="btn-detail" style="border: none; cursor: pointer;">
+                                Accetta Richiesta
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </details>
+            {% endfor %}
+            {% else %}
+            <div class="status-section">
+                <p style="color: #666; font-style: italic;">Nessuna richiesta di soccorso al momento.</p>
+            </div>
+            {% endif %}
+
+        </main>
+    </div>
+
+</body>
+<!-- Script per gestire rendering JSON e altre interazioni -->
+<script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+</html>

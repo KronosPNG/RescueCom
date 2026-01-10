@@ -39,10 +39,36 @@ header {
     flex-shrink: 0;
 }
 
-.header-right a {
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.btn-switch-mode {
+    background-color: rgba(255, 255, 255, 0.1);
     color: var(--text-light);
-    text-decoration: underline;
-    font-size: 0.95rem;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-switch-mode:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px);
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-switch-mode:active {
+    transform: translateY(0);
 }
 
 /* Contenitore Principale (Layout) */
@@ -64,20 +90,29 @@ header {
 }
 
 .sidebar-item {
-    padding: 25px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 1rem;
+    padding: 15px 20px;
+    margin: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.7);
+    border-bottom: none;
 }
 
 .sidebar-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transform: translateX(5px);
 }
 
 .sidebar-item.active {
     background-color: var(--sidebar-active);
-    text-decoration: underline;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Area dei Contenuti */
@@ -279,7 +314,9 @@ summary:hover {
     background-color: var(--sidebar-active);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
     transform: translateY(-1px);
-}/* --- Dynamic Request Card Styles (for dashboard.js / ui.js) --- */
+}
+
+/* --- Dynamic Request Card Styles (for dashboard.js / ui.js) --- */
 .request-card {
     background: #fff;
     border: 1px solid #e5e7eb;
@@ -346,10 +383,12 @@ summary:hover {
     color: #475569;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.4;
 }
+
 /* Fix for details element with request-card class */
 details.request-card {
     padding: 0 !important;
@@ -368,6 +407,7 @@ details.request-card.priority-medium {
 details.request-card.priority-low {
     border-left: 5px solid #22c55e;
 }
+
 /* --- Refined Expanded Card Styles --- */
 
 /* Summary layout */
