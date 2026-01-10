@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from common.services import crypto
 
 
-def connect(uuid: str, skey_path: Path, certificate_path: Path):
+def connect(uuid: str, skey_path: Path, certificate_path: Path, is_rescuer: bool):
     """
     Connect to the cloud by performing key exchange
 
@@ -16,6 +16,7 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
         uuid (str): client's uuid
         skey_path (Path): client's private key path
         certificate_path (Path): client's certificate path
+        is_rescuer (bool): whether the user is a Rescuer
 
     Returns:
         ciphers for encryption and decryption, an encryption nonce and the cloud's nonce
@@ -38,7 +39,7 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
 
     # TODO: switch string to a proper name (maybe)
     resp = requests.post("http://localhost:8000/connect", json={
-            "uuid": uuid, "nonce": nonce.hex(), "certificate": certificate_bytes.hex(), "signature": signature.hex()
+        "uuid": uuid, "nonce": nonce.hex(), "certificate": certificate_bytes.hex(), "signature": signature.hex(), "is_rescuer": is_rescuer
         }
     )
     if not resp.ok:

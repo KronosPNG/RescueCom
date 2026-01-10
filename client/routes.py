@@ -185,7 +185,7 @@ def rescuer_assignment() -> tuple[Response, int]:
 def homepage() -> tuple[Response, int]:
     """Initialize connection"""
     try:
-        ec, dc, nonce, c_nonce = network.connect(client.UUID, client.SKEY_PATH, client.CERTIFICATE_PATH)
+        ec, dc, nonce, c_nonce = network.connect(client.UUID, client.SKEY_PATH, client.CERTIFICATE_PATH, client.IS_RESCUER)
 
         client.ENC_CIPHER = ec
         client.DEC_CIPHER = dc

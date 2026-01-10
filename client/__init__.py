@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent / '.env')
 
 UUID: Optional[str] = None
+IS_RESCUER: Optional[bool] = None
 DEC_CIPHER: Optional[AESGCMSIV] = None
 ENC_CIPHER: Optional[AESGCMSIV] = None
 NONCE: Optional[bytes] = None
@@ -23,18 +24,18 @@ SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("SIGNING_K
 CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("CERTIFICATE_NAME", None))
 
 def init_info():
-    global UUID
+    global UUID, IS_RESCUER
 
     if not DATA_PATH.exists():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.touch()
 
         with DATA_PATH.open('w') as f:
-            f.write(f'uuid = {str(uuid.uuid4())}')
+            f.write(str(uuid.uuid4()) + '\n' + '1')
     else:
         with DATA_PATH.open() as f:
-            line = f.readline().strip()
-            UUID = line[line.index('=')+2:]
+            UUID = f.readline().strip()
+            IS_RESCUER = f.readline().strip() != '0'
 
 def init_certificate_and_skey():
     global SKEY_PATH, CERTIFICATE_PATH
