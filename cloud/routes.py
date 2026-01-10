@@ -403,4 +403,4 @@ def pkey() -> tuple[Any, int]:
 
 @app.route("/health", methods=["GET"])
 def health_check() -> tuple[Response, int]:
-    return jsonify({"message": "Client is healthy"}), 200
+    return jsonify({"message": "Cloud is healthy"}), 200

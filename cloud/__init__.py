@@ -52,3 +52,5 @@ def init_certificate_and_skey():
 
 
 init_certificate_and_skey()
+
+from . import routes
