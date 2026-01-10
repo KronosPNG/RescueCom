@@ -46,10 +46,10 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
 
     data = resp.json()
 
-    # raise KeyError
-    cloud_certificate_bytes = bytes.fromhex(data["certificate"])
-    cloud_nonce = bytes.fromhex(data["nonce"])
-    cloud_signature = bytes.fromhex(data["signature"])
+    # raise TypeError
+    cloud_certificate_bytes = bytes.fromhex(data.get("certificate"))
+    cloud_nonce = bytes.fromhex(data.get("nonce"))
+    cloud_signature = bytes.fromhex(data.get("signature"))
 
     cloud_certificate = crypto.decode_certificate(cloud_certificate_bytes)
 
@@ -64,8 +64,8 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path):
 
     data = resp.json()
 
-    # raises KeyError
-    cloud_pkey = crypto.decode_ecdh_pkey(bytes.fromhex(data["pkey"]))
+    # raises TypeError
+    cloud_pkey = crypto.decode_ecdh_pkey(bytes.fromhex(data.get("pkey")))
 
     key = crypto.derive_shared_key(skey, cloud_pkey)
 

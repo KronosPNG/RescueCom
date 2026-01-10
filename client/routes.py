@@ -25,12 +25,12 @@ def get_validated_json() -> tuple[Optional[dict[str, Any]], Optional[tuple[Respo
     return data, None
 
 def decrypt_message(encrypted_b64: str) -> tuple[Optional[dict[str, Any]], Optional[tuple[Response, int]]]:
-    if DEC_CIPHER is None or NONCE is None or CLOUD_NONCE is None:
+    if client.DEC_CIPHER is None or client.NONCE is None or client.CLOUD_NONCE is None:
         return None, (jsonify({'error': 'Client crypto not initialized'}), 500)
 
     try:
-        encrypted_bytes: bytes = base64.b64decode(encrypted_b64)
-        decrypted_bytes: bytes = crypto.decrypt(DEC_CIPHER, CLOUD_NONCE, encrypted_bytes, b"")
+        encrypted_bytes: bytes = base64.b64decode(encrypted_b64.encode())
+        decrypted_bytes: bytes = crypto.decrypt(client.DEC_CIPHER, client.CLOUD_NONCE, encrypted_bytes, b"")
         return json.loads(decrypted_bytes.decode()), None
 
     except (ValueError, json.JSONDecodeError) as e:
@@ -96,11 +96,11 @@ def emergency_receive() -> tuple[Response, int]:
                 'error': 'Missing required fields: emergency_id, user_uuid, blob'
             }), 400
 
-        if DEC_CIPHER is None or NONCE is None or CLOUD_NONCE is None:
+        if client.DEC_CIPHER is None or client.NONCE is None or client.CLOUD_NONCE is None:
             return jsonify({'error': 'Client crypto not initialized'}), 500
 
-        encrypted_blob: bytes = base64.b64decode(blob_b64)
-        decrypted_blob: bytes = crypto.decrypt(DEC_CIPHER, CLOUD_NONCE, encrypted_blob, b"")
+        encrypted_blob: bytes = base64.b64decode(blob_b64.encode())
+        decrypted_blob: bytes = crypto.decrypt(client.DEC_CIPHER, client.CLOUD_NONCE, encrypted_blob, b"")
 
         emergency: Emergency = Emergency.unpack(
             emergency_id,
