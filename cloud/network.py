@@ -36,7 +36,7 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
                 json={
                     "encrypted_emergency": base64.b64encode(
                         str(encrypted_emergency.to_db_tuple()).encode()
-                    )
+                    ).decode()
                 },
             )
 

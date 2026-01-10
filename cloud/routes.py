@@ -398,7 +398,7 @@ def pkey() -> tuple[Any, int]:
                 cloud.RESCUERS[uuid].dec_cipher = dec_cipher
 
         return jsonify(
-            {"message": "Key exchange completed", "pkey": crypto.encode_ecdh_pkey(pkey)}
+            {"message": "Key exchange completed", "pkey": crypto.encode_ecdh_pkey(pkey).hex()}
         ), 200
     except Exception as e:
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
