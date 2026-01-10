@@ -44,7 +44,18 @@ class Broadcaster:
             LE_ADVERTISING_MANAGER_IFACE,
         )
 
-    def broadcast(self, payload: list[int] | bytes):
+    def broadcast(self, payload: list[int] | bytes) -> None:
+        """
+        Starts broadcasting a payload over Bluetooth LE.
+
+        Registers a Bluetooth LE advertisement containing the given payload
+        as manufacturer-specific data. If broadcasting is already active,
+        the method returns without doing anything.
+
+        Args:
+            payload (list[int] | bytes): The data to broadcast as manufacturer data.
+        """
+
         if self.is_broadcasting:
             return
 
@@ -74,7 +85,14 @@ class Broadcaster:
         print("Broadcasting started successfully!")
         self.is_broadcasting = True
 
-    def stop(self):
+    def stop(self) -> None:
+        """
+        Stops the Bluetooth LE broadcast.
+
+        Unregisters the active advertisement, stops broadcasting,
+        and removes the advertisement object from DBus.
+        """
+
         if self.is_broadcasting:
             try:
                 self.ad_manager.UnregisterAdvertisement(self.advertisement.get_path())
@@ -91,7 +109,17 @@ class Broadcaster:
 
                 self.advertisement = None
 
-    def update_payload(self, payload: list[int] | bytes):
+    def update_payload(self, payload: list[int] | bytes) -> None:
+        """
+        Updates the broadcast payload.
+
+        Stops the current broadcast if active and restarts it with
+        the new payload.
+
+        Args:
+            payload (list[int] | bytes): The new data to broadcast.
+        """
+
         if self.is_broadcasting:
             self.ad_manager.UnregisterAdvertisement(self.advertisement.get_path())
             self.is_broadcasting = False
@@ -139,7 +167,15 @@ class Listener:
             print(f"Error setting up adapter: {e}")
             raise e
 
-    def listen(self):
+    def listen(self) -> None:
+        """
+        Starts listening for Bluetooth LE advertisements.
+
+        Scans for already known devices, registers DBus signal handlers,
+        starts device discovery, and runs the GLib main loop in a
+        background thread.
+        """
+
         # Get existing devices first
         print("Checking existing devices...")
         try:
@@ -188,9 +224,11 @@ class Listener:
         except Exception as e:
             print(f"MainLoop error: {e}")
 
-    def stop(self):
+    def stop(self) -> None:
         """
-        Gracefully stops discovery and the main loop.
+        Gracefully stops Bluetooth discovery.
+
+        Stops device discovery if it is currently active.
         """
         if self.discovery_started:
             try:
@@ -199,6 +237,15 @@ class Listener:
                 pass  # Discovery might already be stopped
 
     def get_payload_nowait(self) -> Optional[bytes]:
+        """
+        Retrieves the next received payload without blocking.
+
+        Returns the next payload from the internal queue if available.
+
+        Returns:
+            Optional[bytes]: The next payload, or None if the queue is empty.
+        """
+
         try:
             return self.payload_queue.get_nowait()
         except asyncio.QueueEmpty:
