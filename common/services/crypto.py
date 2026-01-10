@@ -34,7 +34,7 @@ def save_edkey(path: Path, key: Ed25519PrivateKey):
     try:
         path.touch()
 
-        with path.open('w') as f:
+        with path.open('wb') as f:
             f.write(key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()))
     except Exception as e:
         raise e
@@ -98,7 +98,7 @@ def load_signing_key(path: Path) -> Ed25519PrivateKey:
         raise TypeError("Wrong types for arguments")
 
     try:
-        with path.open() as f:
+        with path.open('rb') as f:
             return load_pem_private_key(f.read(), None)
     except Exception as e:
         raise e
@@ -122,7 +122,7 @@ def load_certificate(path: Path) -> Certificate:
         raise TypeError("Wrong types for arguments")
 
     try:
-        with path.open() as f:
+        with path.open('rb') as f:
             certificate = load_pem_x509_certificate(f.read())
     except Exception as e:
         raise e
@@ -147,12 +147,12 @@ def save_certificate(path: Path, certificate: Certificate) -> None:
     try:
         path.touch()
 
-        with path.open('w') as f:
+        with path.open('wb') as f:
             f.write(certificate.public_bytes(Encoding.PEM))
     except Exception as e:
         raise e
 
-def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> Certificate:
+def gen_certificate(country: str, state_or_province: str, locality: str, common_name: str, duration: int = 30) -> tuple[Certificate, Ed25519PrivateKey]:
     """
     Generate a self-signed certificate to authenticate
 
@@ -163,7 +163,7 @@ def gen_certificate(country: str, state_or_province: str, locality: str, common_
         common_name (str): name and surname
         duration (int): duration of the validity of the certificate in days (default: 30)
     Returns:
-        The generated certificate
+        The generated signing key and certificate
     Raises:
         TypeError: if any argument is of the wrong type
         ValueError: for invalid duration
@@ -196,12 +196,12 @@ def gen_certificate(country: str, state_or_province: str, locality: str, common_
         ).not_valid_before(
             datetime.datetime.now(datetime.UTC)
         ).not_valid_after(
-            datetime.datetime.now(datetime.UTC) + datetime.datetime.timedelta(days=duration)
+            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=duration)
         ).sign(
             skey, None
         )
 
-    return certificate
+    return skey, certificate
 
 def verify_certificate(certificate: Certificate, signature: bytes, nonce: bytes) -> bool:
     """
