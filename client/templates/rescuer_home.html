@@ -1,141 +1,144 @@
-<!DOCTYPE html>
-<html lang="it">
+{% extends 'base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ricezione richieste di soccorso - RescueCom</title>
-    <!-- Icone Bootstrap -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='lib/bootstrap-icons/bootstrap-icons.css') }}">
-    <!-- Foglio di stile personalizzato per la dashboard SSR -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-</head>
+{% block content %}
 
-<body>
 
-    <!-- Intestazione (Header) -->
-    <header>
-        <div class="header-right">
-            <a href="#" class="btn-switch-mode">
-                <i class="bi bi-person-fill-gear"></i> Passa a Rescuee
-            </a>
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/rescuer.css') }}">
+
+
+<div class="bg-gradient-header text-white py-5 mb-5 shadow">
+    <div class="container d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="text-uppercase text-white-50 mb-1 ls-1">Area Operativa RescueCom</h6>
+            <h1 class="display-5 fw-bold mb-0">
+                <i class="bi bi-shield-check me-2"></i>Benvenuto, {{ user.name }}
+            </h1>
         </div>
-    </header>
+        <div
+            class="text-end d-none d-md-block bg-white bg-opacity-10 p-3 rounded-3 border border-white border-opacity-25">
+            <div class="fs-5 fw-bold mb-1">{{ user.name }} {{ user.surname }}</div>
+            <div class="badge bg-white text-primary">Gruppo Sanguigno: {{ user.blood_type.name }}</div>
+        </div>
+    </div>
+</div>
 
-    <div class="main-container">
-        <!-- Barra Laterale (Sidebar) -->
-        <aside class="sidebar">
-            <div style="padding: 20px 25px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-secondary border-bottom pb-2 pe-4">
+            <i class="bi bi-list-task me-2"></i>Richieste in Attesa
+        </h3>
+        <span class="badge rounded-pill bg-light text-dark border shadow-sm fs-6 px-3 py-2">
+            {{ received_emergencies|length }} Attive
+        </span>
+    </div>
+
+    <div class="row g-4">
+        {% if received_emergencies %}
+        {% for emergency in received_emergencies %}
+        <div class="col-lg-6 animate-fade-in delay-{{ loop.index if loop.index <= 3 else 3 }}">
+            <!-- Card Logic -->
+            {% set severity_class = 'severity-border-high' if emergency.severity > 70 else 'severity-border-mid' if
+            emergency.severity > 30 else 'severity-border-low' %}
+            {% set badge_class = 'bg-danger pulse-animation' if emergency.severity > 70 else 'bg-warning text-dark' if
+            emergency.severity > 30 else 'bg-success' %}
+
+            <div class="card h-100 shadow-sm border-0 {{ severity_class }} card-hover">
                 <div
-                    style="font-weight: 800; font-size: 1.5rem; color: #fff; display: flex; align-items: center; letter-spacing: -0.5px;">
-                    <i class="bi bi-shield-plus" style="color: #ef4444; margin-right: 10px; font-size: 1.8rem;"></i>
-                    RescueCom
+                    class="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+                    <span class="badge {{ badge_class }} px-3 py-2 rounded-pill shadow-sm">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> Gravità: {{ emergency.severity }}
+                    </span>
+                    <small class="text-muted fw-bold font-monospace bg-light px-2 py-1 rounded">
+                        <i class="bi bi-clock"></i> {{ emergency.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    </small>
                 </div>
-            </div>
 
-            <div class="sidebar-item active" style="justify-content: space-between;">
-                <div style="display: flex; align-items: center;">
-                    <i class="bi bi-broadcast-pin" style="margin-right: 10px; font-size: 1.2rem;"></i>
-                    Ricezione richieste
-                </div>
-                <span class="badge bg-danger rounded-pill" style="font-size: 0.75rem;">{{ emergencies|length }}</span>
-            </div>
-        </aside>
-
-        <!-- Contenuto Principale -->
-        <main class="content">
-            <h1>Ciao, {{ user.name }}</h1>
-            <p style="margin-bottom: 30px; color: #666;">Ecco le richieste di soccorso in arrivo.</p>
-
-            {% if emergencies %}
-            {% for emergency in emergencies|sort(attribute='severity', reverse=True) %}
-            <details
-                class="request-card priority-{{ 'high' if emergency.severity > 66 else 'medium' if emergency.severity > 33 else 'low' }}">
-                <summary>
-                    <div class="summary-content">
-                        <div class="summary-header">
-                            <span class="card-time">{{ emergency.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
-                            <span class="badge {{ 'bg-success' if emergency.resolved else 'bg-warning text-dark' }}"
-                                style="font-size: 0.8rem; padding: 4px 8px; border-radius: 4px;">
-                                {{ 'Accettata' if emergency.resolved else 'In attesa' }}
-                            </span>
-                        </div>
-                        <div class="card-title">{{ emergency.emergency_type }}</div>
-                        <div class="card-preview">{{ emergency.description }}</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h4 class="card-title text-dark fw-bold mb-1">{{ emergency.emergency_type }}</h4>
+                        <span class="badge bg-light text-secondary border">ID: {{ emergency.emergency_id }}</span>
                     </div>
-                    <i class="bi bi-caret-down-fill" style="margin-left: 10px; color: #64748b;"></i>
-                </summary>
 
-                <div class="card-details">
-                    <div class="info-grid">
-                        <div class="info-col">
-                            <div class="info-group">
-                                <div class="info-label">Dettagli Emergenza</div>
-                                <div class="info-value">
-                                    <strong>Priorità:</strong> {{ emergency.severity }}<br>
-                                    <strong>Data:</strong> {{ emergency.created_at.strftime('%d/%m/%Y %H:%M') }}<br>
-                                    <strong>Stato:</strong> {{ 'Risolta' if emergency.resolved else 'In attesa' }}
+
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="flex-grow-1">
+                            <p class="card-text text-muted mb-3">{{ emergency.description }}</p>
+
+                            <div class="d-flex align-items-start mb-2 text-secondary">
+                                <i class="bi bi-geo-alt-fill text-danger me-2 mt-1 fs-5"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ emergency.address }} {{ emergency.street_number }}
+                                    </div>
+                                    <small>{{ emergency.city }}</small>
+                                    <div class="small font-monospace text-muted mt-1">
+                                        <i class="bi bi-crosshair"></i> {{ emergency.position[0]|round(6) }}, {{
+                                        emergency.position[1]|round(6) }}
+                                    </div>
+                                    {% if emergency.place_description %}
+                                    <div class="small fst-italic mt-2 bg-light p-2 rounded border border-light">
+                                        <i class="bi bi-info-circle me-1"></i>{{ emergency.place_description }}
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
-                            <div class="info-group">
-                                <div class="info-label">Luogo</div>
-                                <div class="info-value">
-                                    {{ emergency.address }} {{ emergency.street_number }}, {{ emergency.city }}<br>
-                                    <small style="color: #666;">{{ emergency.place_description }}</small><br>
-                                    <small style="font-family: monospace;">Lat: {{ emergency.position[0] }}, Lon: {{
-                                        emergency.position[1] }}</small>
-                                </div>
+                            <div class="mb-2">
+                                <small
+                                    class="badge {{ 'bg-success' if emergency.resolved else 'bg-warning text-dark' }}">
+                                    {{ 'Risolto' if emergency.resolved else 'Attivo' }}
+                                </small>
                             </div>
                         </div>
-                        <div class="info-col">
-                            <div class="info-group">
-                                <div class="info-label">Multimedia</div>
-                                {% if emergency.photo_b64 %}
-                                {% set mime_type = 'png' if emergency.photo_b64.startswith('iVB') else 'jpeg' %}
-                                <img src="data:image/{{ mime_type }};base64,{{ emergency.photo_b64 }}"
-                                    alt="Img not found"
-                                    style="max-width: 100%; border-radius: 6px; border: 1px solid #ddd;"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-                                <div
-                                    style="display:none; padding: 20px; background: #f1f5f9; border-radius: 6px; text-align: center; color: #64748b;">
-                                    Img not found
-                                </div>
-                                {% else %}
-                                <div
-                                    style="padding: 20px; background: #f1f5f9; border-radius: 6px; text-align: center; color: #64748b;">
-                                    Img not found
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class="info-group">
-                                <div class="info-label">Dettagli Aggiuntivi</div>
+
+                        {% if emergency.photo_b64 %}
+                        <div class="flex-shrink-0">
+                            <img src="data:image/jpeg;base64,{{ emergency.photo_b64 }}"
+                                class="rounded shadow-sm border border-2 border-white" alt="Foto Scenario"
+                                style="width: 110px; height: 110px; object-fit: cover;">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if emergency.details_json %}
+                    <div class="mt-3">
+                        <a class="btn btn-sm btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center"
+                            data-bs-toggle="collapse" href="#details-{{ loop.index }}" role="button">
+                            <span><i class="bi bi-activity me-2"></i>Dettagli Tecnici</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </a>
+                        <div class="collapse mt-2" id="details-{{ loop.index }}">
+                            <div class="card card-body bg-light border-0 py-2 small">
                                 <div data-json='{{ emergency.details_json }}'></div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="action-bar">
-                        <form method="POST" action="">
-                            <button type="submit" name="emergency_id" value="{{ emergency.emergency_id }}"
-                                class="btn-detail" style="border: none; cursor: pointer;">
-                                Accetta Richiesta
-                            </button>
-                        </form>
-                    </div>
+                    {% endif %}
                 </div>
-            </details>
-            {% endfor %}
-            {% else %}
-            <div class="status-section">
-                <p style="color: #666; font-style: italic;">Nessuna richiesta di soccorso al momento.</p>
+
+                <div class="card-footer bg-white border-top-0 pb-4 pt-0 text-end">
+                    <form method="POST" action="/rescuer/">
+                        <input type="hidden" name="emergency_id" value="{{ emergency.emergency_id }}">
+                        <button type="submit"
+                            class="btn btn-primary btn-gradient px-4 py-2 fw-bold shadow-sm rounded-pill w-100">
+                            <i class="bi bi-check2-circle me-2"></i>Accetta Intervento
+                        </button>
+                    </form>
+                </div>
             </div>
-            {% endif %}
-
-        </main>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12 py-5 text-center animate-fade-in">
+            <div class="d-inline-block bg-white shadow-sm rounded-circle p-5 mb-4">
+                <i class="bi bi-shield-check display-1 text-success opacity-50"></i>
+            </div>
+            <h3 class="fw-bold text-dark">Nessuna emergenza attiva</h3>
+            <p class="text-muted fs-5">Ben fatto! Sei in attesa di nuove richieste dalla centrale.</p>
+        </div>
+        {% endif %}
     </div>
+</div>
 
-</body>
-<!-- Script per gestire rendering JSON e altre interazioni -->
-<script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-
-</html>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
