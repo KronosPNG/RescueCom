@@ -16,14 +16,6 @@ from common.services import crypto
 from cloud import persistence, app
 
 
-CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
-    os.getenv("CERTIFICATE_NAME", None)
-)
-SIGNING_KEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
-    os.getenv("SIGNING_KEY_NAME", None)
-)
-
-
 def get_validated_json() -> tuple[Optional[dict[str, Any]], Optional[tuple[Any, int]]]:
     """Extract and validate JSON data from request"""
     data: Optional[dict[str, Any]] = request.get_json()
@@ -330,10 +322,10 @@ def connect() -> tuple[Any, int]:
         if not crypto.verify_certificate(client_certificate, client_signature, client_nonce):
             return jsonify({"error": "Couldn't verify certificate or signature"}), 400
 
-        certificate = crypto.load_certificate(CERTIFICATE_PATH)
+        certificate = crypto.load_certificate(cloud.CERTIFICATE_PATH)
         certificate_bytes = crypto.encode_certificate(certificate)
         nonce = os.urandom(12)
-        skey = crypto.load_signing_key(SIGNING_KEY_PATH)
+        skey = crypto.load_signing_key(cloud.SKEY_PATH)
         signature = crypto.sign(skey, nonce)
 
         with cloud.status_lock:
