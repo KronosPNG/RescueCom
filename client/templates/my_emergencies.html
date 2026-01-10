@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <h2 class="mb-4">Richieste di Soccorso</h2>
+
+    {% if sent_emergencies %}
+    {% for emergency in sent_emergencies %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+
+            <!-- Header: ID, Priorità, Stato, Link dettagli -->
+            <div class="d-flex justify-content-between align-items-center">
+                <strong>ID: {{ emergency.emergency_id }} | PRIORITÀ: {{ emergency.severity }}</strong>
+                <span class="badge bg-secondary">
+                        {% if emergency.resolved %}Risolta{% else %}In corso{% endif %}
+                    </span>
+
+                <!--/emergency_status.html-->
+                <a href="/emergency/{{ emergency.emergency_id }}" class="btn btn-primary btn-sm ms-2" title="Visualizza dettagli">
+                    <i class="bi bi-eye-fill"></i>
+                </a>
+            </div>
+
+            <hr>
+
+            <!-- Informazioni principali -->
+            <h5 class="mb-1">
+                Tipo emergenza: {{ emergency.emergency_type }} | User UUID: {{ emergency.user_uuid }}
+            </h5>
+
+            <small class="text-muted">
+                {{ emergency.created_at.strftime('%d/%m/%Y %H:%M') }}
+            </small>
+
+            <p class="mt-2 mb-1">
+                Posizione: Lat {{ emergency.position[0] }}, Lng {{ emergency.position[1] }}
+            </p>
+
+            <p class="mb-0">
+                Descrizione: {{ emergency.description }}
+            </p>
+
+            <!-- Foto base64 -->
+            {% if emergency.photo_b64 %}
+            <p class="mt-2"><strong>Foto:</strong></p>
+            <img src="data:image/jpeg;base64,{{ emergency.photo_b64 }}" alt="Foto emergenza" class="img-fluid mb-2">
+            {% endif %}
+
+            <!-- JSON dettagli -->
+            {% if emergency.details_json %}
+            <div data-json='{{ emergency.details_json }}'></div>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>Nessuna richiesta inviata.</p>
+    {% endif %}
+
+</div>
+{% endblock %}

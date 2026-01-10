@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container vh-100 d-flex flex-column justify-content-center">
+    <div class="row text-center mb-5">
+        <div class="col">
+            <h1 class="display-4 fw-bold text-dark">Benvenuto in RescueCom</h1>
+        </div>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-5">
+            <div class="card h-100 border-0 shadow-lg text-center p-3">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-4 text-primary">
+                        <i class="bi bi-heart-pulse" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="card-title h3 fw-bold">Rescuee</h2>
+                    <p class="card-text text-muted flex-grow-1">
+                        Persone in difficoltà che necessitano di inviare richieste di aiuto
+                    </p>
+                    <a href="/register?role=rescuee" class="btn btn-primary btn-lg py-3 fw-bold">
+                        Ho bisogno di aiuto
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card h-100 border-0 shadow-lg text-center p-3">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-4 text-success">
+                        <i class="bi bi-shield-plus" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="card-title h3 fw-bold">Rescuer</h2>
+                    <p class="card-text text-muted flex-grow-1">
+                        Personale di soccorso abilitato a ricevere e gestire le emergenze
+                    </p>
+                    <a href="/register?role=rescuer" class="btn btn-success btn-lg py-3 fw-bold">
+                        Sono un soccorritore
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
