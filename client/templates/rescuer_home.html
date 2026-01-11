@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link href="{{ url_for('static', filename='lib/leaflet/leaflet.css') }}" rel="stylesheet">
+
+
+
+
+
+
+
+<div class="bg-primary bg-gradient text-white py-5 mb-5 shadow">
+    <div class="container d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="text-uppercase text-white-50 mb-1 ls-1">Area Operativa RescueCom</h6>
+            <h1 class="display-5 fw-bold mb-0">
+                <i class="bi bi-shield-check me-2"></i>Benvenuto, {{ user.name }}
+            </h1>
+        </div>
+        <div
+            class="text-end d-none d-md-block bg-white bg-opacity-10 p-3 rounded-3 border border-white border-opacity-25">
+            <div class="fs-5 fw-bold mb-1">{{ user.name }} {{ user.surname }}</div>
+            <div class="badge bg-white text-primary">Gruppo Sanguigno: {{ user.blood_type.name }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="mb-4 shadow-sm rounded overflow-hidden border">
+        <div id="map" style="height: 350px; z-index: 1;" data-emergencies='[
+                {% for emergency in received_emergencies %}
+                {
+                    "id": "{{ emergency.emergency_id }}",
+                    "lat": {{ emergency.position[0] }},
+                    "lng": {{ emergency.position[1] }},
+                    "type": "{{ emergency.emergency_type }}",
+                    "severity": {{ emergency.severity }}
+                }{{ "," if not loop.last }}
+                {% endfor %}
+            ]'></div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-secondary border-bottom pb-2 pe-4">
+            <i class="bi bi-list-task me-2"></i>Richieste in Attesa
+        </h3>
+        <span class="badge rounded-pill bg-light text-dark border shadow-sm fs-6 px-3 py-2">
+            {{ received_emergencies|length }} Attive
+        </span>
+    </div>
+
+    <div class="row g-4">
+        {% if received_emergencies %}
+        {% for emergency in received_emergencies %}
+        <div class="col-lg-6">
+            <!-- Card Logic -->
+            {% set severity_class = 'border-top border-5 border-danger' if emergency.severity > 70 else 'border-top
+            border-5 border-warning' if
+            emergency.severity > 30 else 'border-top border-5 border-success' %}
+            {% set badge_class = 'bg-danger' if emergency.severity > 70 else 'bg-warning text-dark' if
+            emergency.severity > 30 else 'bg-success' %}
+
+            <div class="card h-100 shadow-sm border-0 {{ severity_class }}">
+                <div
+                    class="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+                    <span class="badge {{ badge_class }} px-3 py-2 rounded-pill shadow-sm">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> Gravità: {{ emergency.severity }}
+                    </span>
+                    <small class="text-muted fw-bold font-monospace bg-light px-2 py-1 rounded">
+                        <i class="bi bi-clock"></i> {{ emergency.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    </small>
+                </div>
+
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h4 class="card-title text-dark fw-bold mb-1">{{ emergency.emergency_type }}</h4>
+                        <span class="badge bg-light text-secondary border">ID: {{ emergency.emergency_id }}</span>
+                    </div>
+
+
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="flex-grow-1">
+                            <p class="card-text text-muted mb-3">{{ emergency.description }}</p>
+
+                            <div class="d-flex align-items-start mb-2 text-secondary">
+                                <i class="bi bi-geo-alt-fill text-danger me-2 mt-1 fs-5"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ emergency.address }} {{ emergency.street_number }}
+                                    </div>
+                                    <small>{{ emergency.city }}</small>
+                                    <div class="small font-monospace text-muted mt-1">
+                                        <i class="bi bi-crosshair"></i> {{ emergency.position[0]|round(6) }}, {{
+                                        emergency.position[1]|round(6) }}
+                                        <button class="btn btn-sm btn-outline-primary py-0 px-2 ms-2 btn-locate"
+                                            data-id="{{ emergency.emergency_id }}"
+                                            data-lat="{{ emergency.position[0] }}"
+                                            data-lng="{{ emergency.position[1] }}">
+                                            <i class="bi bi-map me-1"></i>Vedi su Mappa
+                                        </button>
+                                    </div>
+                                    {% if emergency.place_description %}
+                                    <div class="small fst-italic mt-2 bg-light p-2 rounded border border-light">
+                                        <i class="bi bi-info-circle me-1"></i>{{ emergency.place_description }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small
+                                    class="badge {{ 'bg-success' if emergency.resolved else 'bg-warning text-dark' }}">
+                                    {{ 'Risolto' if emergency.resolved else 'Attivo' }}
+                                </small>
+                            </div>
+                        </div>
+
+                        {% if emergency.photo_b64 %}
+                        <div class="flex-shrink-0">
+                            <a href="#" data-bs-toggle="modal"
+                                data-bs-target="#photoModal-{{ emergency.emergency_id }}">
+                                <img src="data:image/jpeg;base64,{{ emergency.photo_b64 }}"
+                                    class="rounded shadow-sm border border-2 border-white" alt="Foto Scenario"
+                                    style="width: 110px; height: 110px; object-fit: cover; cursor: pointer; transition: transform 0.2s;"
+                                    onmouseover="this.style.transform='scale(1.05)'"
+                                    onmouseout="this.style.transform='scale(1)'">
+                            </a>
+                        </div>
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="photoModal-{{ emergency.emergency_id }}" tabindex="-1"
+                            aria-labelledby="photoModalLabel-{{ emergency.emergency_id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header border-0">
+                                        <h5 class="modal-title" id="photoModalLabel-{{ emergency.emergency_id }}">Foto
+                                            Scenario</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body text-center p-0 overflow-hidden bg-light rounded-bottom">
+                                        <img src="data:image/jpeg;base64,{{ emergency.photo_b64 }}" class="img-fluid"
+                                            style="max-height: 80vh;" alt="Scenario Full">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if emergency.details_json %}
+                    <div class="mt-3">
+                        <a class="btn btn-sm btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center"
+                            data-bs-toggle="collapse" href="#details-{{ loop.index }}" role="button">
+                            <span><i class="bi bi-activity me-2"></i>Dettagli Tecnici</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </a>
+                        <div class="collapse mt-2" id="details-{{ loop.index }}">
+                            <div class="card card-body bg-light border-0 py-2 small">
+                                <div data-json='{{ emergency.details_json }}'></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer bg-white border-top-0 pb-4 pt-0 text-end">
+                    <form method="POST" action="/rescuer/">
+                        <input type="hidden" name="emergency_id" value="{{ emergency.emergency_id }}">
+                        <button type="submit" class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-pill w-100">
+                            <i class="bi bi-check2-circle me-2"></i>Accetta Intervento
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12 py-5 text-center">
+            <div class="d-inline-block bg-white shadow-sm rounded-circle p-5 mb-4">
+                <i class="bi bi-shield-check display-1 text-success opacity-50"></i>
+            </div>
+            <h3 class="fw-bold text-dark">Nessuna emergenza attiva</h3>
+            <p class="text-muted fs-5">Ben fatto! Sei in attesa di nuove richieste dalla centrale.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='lib/leaflet/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const mapElement = document.getElementById('map');
+        if (!mapElement) return;
+
+        // Initialize Map
+        const map = L.map('map').setView([41.9028, 12.4964], 10); // Default Rome centring
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Emergency Data from data attribute
+        let emergencies = [];
+        try {
+            const rawData = mapElement.getAttribute('data-emergencies');
+            if (rawData) {
+                emergencies = JSON.parse(rawData);
+            }
+        } catch (e) {
+            console.error("Error parsing emergency data:", e);
+        }
+
+        // Bounds to fit all markers
+        const bounds = [];
+        const markers = {};
+
+        emergencies.forEach(em => {
+            const markerColor = em.severity > 70 ? 'red' : em.severity > 30 ? 'orange' : 'green';
+
+            const marker = L.circleMarker([em.lat, em.lng], {
+                color: markerColor,
+                fillColor: markerColor,
+                fillOpacity: 0.8,
+                radius: 10
+            }).addTo(map);
+
+            marker.bindPopup(`<b>${em.type}</b><br>Gravità: ${em.severity}`);
+            markers[em.id] = marker;
+            bounds.push([em.lat, em.lng]);
+        });
+
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        // Handle "Vedi su Mappa" click
+        document.querySelectorAll('.btn-locate').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const id = btn.getAttribute('data-id');
+                const lat = parseFloat(btn.getAttribute('data-lat'));
+                const lng = parseFloat(btn.getAttribute('data-lng'));
+
+                if (markers[id]) {
+                    // Scroll to map
+                    mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    // Give a small delay to allow scroll to finish/start, then fly
+                    setTimeout(() => {
+                        map.invalidateSize();
+                        map.flyTo([lat, lng], 18, {
+                            animate: true,
+                            duration: 1.5
+                        });
+                        markers[id].openPopup();
+                    }, 300);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
