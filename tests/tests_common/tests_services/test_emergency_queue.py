@@ -187,10 +187,7 @@ def test_update_emergency_not_raises(emergency_queue, emergency_factory):
         (10, "encrypted_emergency_factory", True),
         (40, "encrypted_emergency_factory", True),
         (70, "encrypted_emergency_factory", True),
-        # TODO: change as soon PR https://github.com/KronosPNG/RescueCom/pull/47 will be merged
-        # Invalid severity (not yet defined) in the logic
-        # because the logic puts >=65 in high
-        (-1, "emergency_factory", True),
+        (-1, "emergency_factory", False),
         (999, "emergency_factory", True),
     ],
 )
