@@ -166,10 +166,11 @@ class EmergencyQueue:
 
             return index
 
+        pos: int = -1
         if (old_emergency_severity >= 0) and (
             old_emergency_severity < self.min_medium_sev_score
         ):
-            pos: int = linear_search(self.low_queue, emergency)
+            pos = linear_search(self.low_queue, emergency)
             if pos == -1:
                 raise ValueError("Old emergency not found")
 
@@ -177,13 +178,13 @@ class EmergencyQueue:
         elif (old_emergency_severity >= self.min_medium_sev_score) and (
             old_emergency_severity < self.min_high_sev_score
         ):
-            pos: int = linear_search(self.medium_queue, emergency)
+            pos = linear_search(self.medium_queue, emergency)
             if pos == -1:
                 raise ValueError("Old emergency not found")
 
             self.medium_queue.pop(pos)
         else:
-            pos: int = linear_search(self.high_queue, emergency)
+            pos = linear_search(self.high_queue, emergency)
             if pos == -1:
                 raise ValueError("Old emergency not found")
 
