@@ -1,7 +1,7 @@
 import heapq
-
-from typing import Self
 from enum import Enum
+from typing import Self
+
 from common.models.emergency import Emergency
 from common.models.enc_emergency import EncryptedEmergency
 
@@ -14,6 +14,7 @@ class SeverityType(Enum):
 
 class EmergencyQueue:
     __instance = None
+    __allow_init = False
 
     min_medium_sev_score = 35
     min_high_sev_score = 65
@@ -24,7 +25,7 @@ class EmergencyQueue:
     ]
 
     def __init__(self) -> None:
-        if not EmergencyQueue.__instance:
+        if not EmergencyQueue.__allow_init:
             raise TypeError(
                 "EmergencyQueue singleton must be created using EmergencyQueue.get_instance"
             )
@@ -47,7 +48,9 @@ class EmergencyQueue:
         """
 
         if cls.__instance is None:
+            cls.__allow_init = True
             cls.__instance = cls()
+            cls.__allow_init = False
 
         return cls.__instance
 
