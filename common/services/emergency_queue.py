@@ -66,6 +66,10 @@ class EmergencyQueue:
         Args:
             emergency (Emergency | EncryptedEmergency): The emergency instance
                 to be added to the queue.
+
+        Raises:
+            ValueError: If the severity level of the emergency is invalid
+                (e.g., negative or outside defined severity thresholds).
         """
 
         severity = emergency.severity
@@ -84,11 +88,13 @@ class EmergencyQueue:
                 self.medium_queue,
                 (severity, created_at, emergency),
             )
-        else:
+        elif severity >= self.min_high_sev_score:
             heapq.heappush_max(
                 self.high_queue,
                 (severity, created_at, emergency),
             )
+        else:
+            raise ValueError("Invalid severity level")
 
     def pop_emergency(
         self, severity_type: SeverityType
