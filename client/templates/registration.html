@@ -11,12 +11,12 @@
 </head>
 <body>
     <img src="{{ url_for('static', filename='img/image.png') }}" width="100%" height="100%">
-        <form action="/accept" method="post">
+        <form action="./" method="post">
             <h1 id="registrazione">Registrazione</h1>
             <div id="content_form">
                 <div class="label">
                     <p class="obligatorio">Nome</p>
-                    <input type="text" name="name" id="" placeholder="Es. Mario" required >
+                    <input type="text" name="name" id="" placeholder="Es. Mario" required>
                 </div>
                 <div class="label">
                     <p class="obligatorio">Cognome</p>
@@ -27,23 +27,25 @@
                     <input type="date" name="birthday" id="data" required>
                 </div>
                 <div class="label">
+                    <p class="obligatorio">Vuoi essere un rescuer?</p>
+                    <span>Si</span>
+                    <input type="checkbox" name="is_rescuer" id="is_rescuer" required>
+                </div>
+                <div class="label">
                         <p class="obligatorio">Gruppo Sanguigno</p>
                     <select name="bloodtype" id="sanguigno" required>
                         <option value="">Seleziona il gruppo</option>
-                        <option value="a+">A+</option>
-                        <option value="b-">A-</option>
-                        <option value="b+">B+</option>
-                        <option value="b-">B-</option>
-                        <option value="ab+">AB+</option>
-                        <option value="ab-">AB-</option>
-                        <option value="0+">0+</option>
-                        <option value="0-">0-</option>
+                        <option value="APOS">A+</option>
+                        <option value="ANEG">A-</option>
+                        <option value="BPOS">B+</option>
+                        <option value="BNEG">B-</option>
+                        <option value="ABPOS">AB+</option>
+                        <option value="ABNEG">AB-</option>
+                        <option value="OPOS">0+</option>
+                        <option value="ONEG">0-</option>
                     </select>
                 </div>
-                <div class="label">
-                    <p>Allergie ai medicinali</p>
-                    <textarea name="description" id="description" placeholder="Scrivi tutti i medicinali/principiti attivi"></textarea>
-                </div>
+            
                 <div id="checkbox">
                     <div class="label">
                         <p>Disabilità</p>
@@ -134,4 +136,68 @@
             });
         </script>
 </body>
+<script>
+    // --- LOGICA DI NAVIGAZIONE (AVANTI/INDIETRO) ---
+    var button_avanti = document.getElementById("avanti");
+    var button_indietro = document.getElementById("indietro");
+    var form_content = document.getElementById("content_form"); // Rinominato per chiarezza
+    var second_part = document.getElementById("second");
+    var main_form = document.querySelector('form'); // Seleziona il tag <form>
+
+    button_avanti.addEventListener("click", () => {
+
+        form_content.style.display = "none";
+        second_part.style.display = "flex";
+    });
+
+    button_indietro.addEventListener("click", () => {
+        form_content.style.display = "flex";
+        second_part.style.display = "none";
+    });
+
+    // --- LOGICA DI COSTRUZIONE JSON PER HEALTHINFO ---
+    main_form.addEventListener("submit", function(event) {
+        // 1. Ferma l'invio standard per elaborare i dati
+        event.preventDefault();
+
+        // 2. Raccogli i valori selezionati per Disabilità
+        // Seleziona tutti gli input che hanno name="healthinfo[disabilita]" e sono checkati
+        const disabilitaChecked = document.querySelectorAll('input[name="healthinfo[disabilita]"]:checked');
+        // Crea un array con i valori e uniscili in una stringa (es: "Motoria, Visiva")
+        // Se preferisci inviare un array nel JSON, rimuovi .join(', ')
+        const disabilitaString = Array.from(disabilitaChecked).map(cb => cb.value).join(', ');
+
+        // 3. Raccogli i valori selezionati per Malattie
+        const malattieChecked = document.querySelectorAll('input[name="healthinfo[malattie]"]:checked');
+        const malattieString = Array.from(malattieChecked).map(cb => cb.value).join(', ');
+
+        // 4. Costruisci il dizionario (Oggetto JS)
+        const healthInfoObj = {
+            disabilita: disabilitaString || null, // Mette null se vuoto, o stringa vuota ""
+            malattie: malattieString || null
+        };
+
+        // 5. Converti l'oggetto in stringa JSON
+        const jsonString = JSON.stringify(healthInfoObj);
+        
+        // Esempio risultato: '{"disabilita":"Motoria","malattie":"Ipertensione, Asma"}'
+
+        // 6. Crea un input nascosto per inviare il JSON
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'healthinfo'; // Questo sarà il nome della chiave nel backend
+        hiddenInput.value = jsonString;
+        this.appendChild(hiddenInput);
+
+        // 7. Rimuovi i 'name' dalle checkbox originali
+        // Questo impedisce al form di inviare anche i dati raw "healthinfo[disabilita]"
+        // lasciando solo il nostro nuovo input JSON pulito.
+        document.querySelectorAll('input[name^="healthinfo["]').forEach(input => {
+            input.removeAttribute('name');
+        });
+
+        // 8. Invia il form manualmente ora che è pronto
+        this.submit();
+    });
+</script>
 </html>

@@ -47,10 +47,10 @@ body { margin: 0; }
     transform: translate(-50%);
 }
 
-#diventa_rescuer{
+.diventa_rescuer{
   position: absolute;
   left: 55%;
-  width: 180px;
+  width: 200px;
   font-size: 25px;
   transform: translate(-52%,55%);
   top: 25%;
@@ -171,7 +171,7 @@ body { margin: 0; }
     padding-right: 0; /* Rimuoviamo il padding che spingeva il contenuto */
   } 
   
-  #diventa_rescuer{
+  .diventa_rescuer{
     display: block;
     position: absolute;
 
@@ -196,7 +196,7 @@ body { margin: 0; }
     padding-right: 0; /* Rimuoviamo il padding che spingeva il contenuto */
   } 
   
-  #diventa_rescuer{
+  .diventa_rescuer{
     display: block;
     position: absolute;
 
