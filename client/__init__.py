@@ -1,7 +1,9 @@
 import os
+import threading
 import requests
 import uuid
 import datetime
+import time
 
 from common.services import crypto
 from pathlib import Path
@@ -9,8 +11,9 @@ from typing import Optional
 from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
 from flask import Flask
 from dotenv import load_dotenv
+from threading import Thread, Lock
 
-load_dotenv(Path(__file__).parent / '.env')
+load_dotenv(Path(__file__).parent / ".env")
 
 UUID: Optional[str] = None
 IS_RESCUER: Optional[bool] = None
@@ -20,8 +23,17 @@ NONCE: Optional[bytes] = None
 CLOUD_NONCE: Optional[bytes] = None
 
 DATA_PATH = Path(os.getenv("DATA_FILE"))
-SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("SIGNING_KEY_NAME", None))
-CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(os.getenv("CERTIFICATE_NAME", None))
+SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
+    os.getenv("SIGNING_KEY_NAME", None)
+)
+CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
+    os.getenv("CERTIFICATE_NAME", None)
+)
+
+CONNECTED: bool = False
+
+mutex = Lock()
+
 
 def init_info():
     global UUID, IS_RESCUER
@@ -30,12 +42,13 @@ def init_info():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.touch()
 
-        with DATA_PATH.open('w') as f:
-            f.write(str(uuid.uuid4()) + '\n' + '1')
+        with DATA_PATH.open("w") as f:
+            f.write(str(uuid.uuid4()) + "\n" + "1")
     else:
         with DATA_PATH.open() as f:
             UUID = f.readline().strip()
-            IS_RESCUER = f.readline().strip() != '0'
+            IS_RESCUER = f.readline().strip() != "0"
+
 
 def init_certificate_and_skey():
     global SKEY_PATH, CERTIFICATE_PATH
@@ -45,24 +58,53 @@ def init_certificate_and_skey():
         SKEY_PATH.touch()
         CERTIFICATE_PATH.touch()
 
-        skey, certificate = crypto.gen_certificate("IT", "Salerno", "Fisciano", "Luigi Turco")
+        skey, certificate = crypto.gen_certificate(
+            "IT", "Salerno", "Fisciano", "Luigi Turco"
+        )
 
         crypto.save_certificate(CERTIFICATE_PATH, certificate)
         crypto.save_edkey(SKEY_PATH, skey)
 
     else:
-
         certificate = crypto.load_certificate(CERTIFICATE_PATH)
 
         if certificate.not_valid_after_utc <= datetime.datetime.now(datetime.UTC):
-            skey, certificate = crypto.gen_certificate("IT", "Salerno", "Fisciano", "Luigi Turco")
+            skey, certificate = crypto.gen_certificate(
+                "IT", "Salerno", "Fisciano", "Luigi Turco"
+            )
 
             crypto.save_certificate(CERTIFICATE_PATH, certificate)
             crypto.save_edkey(SKEY_PATH, skey)
 
 
+def check_connection():
+    global CONNECTED
+
+    while True:
+        connected = False
+
+        for _ in range(3):  # max 3 attempts
+            try:
+                r = requests.get("http://localhost:8000/health", timeout=5)
+
+                if r.status_code == 200:
+                    connected = True
+                    break
+            except requests.RequestException:
+                pass  # server not reachable
+
+            time.sleep(5)
+
+        with mutex:
+            CONNECTED = connected
+
+        time.sleep(60)
+
+
 init_info()
 init_certificate_and_skey()
+check_connection_thread: Thread = threading.Thread(target=check_connection, daemon=True)
+check_connection_thread.start()
 
 
 app = Flask(__name__)
