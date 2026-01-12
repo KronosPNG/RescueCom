@@ -4,7 +4,6 @@ import os
 
 from flask import Flask
 from flask.logging import default_handler
-from multiprocessing import Manager
 from common.services import emergency_queue, crypto
 from common.models import db
 from pathlib import Path
@@ -12,20 +11,10 @@ from pathlib import Path
 
 app = Flask(__name__)
 
-
-manager = Manager()
-status_lock = manager.Lock()
-
 # format UUID: ClientDTO
-CLIENTS = manager.dict(dict())
+CLIENTS = dict()
 # subset of CLIENTS
-RESCUERS = manager.dict(dict())
-
-manager.register(
-    'get_queue',
-    callable=emergency_queue.EmergencyQueue.get_instance,
-    exposed=['push_emergency', 'pop_emergency', 'update_emergency']
-)
+RESCUERS = dict()
 
 db.DatabaseManager.get_instance(Path(os.getenv("DB_DIR", None)) / Path(os.getenv("DB_NAME", None)))
 

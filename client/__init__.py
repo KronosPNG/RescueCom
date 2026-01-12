@@ -6,7 +6,7 @@ import datetime
 import time
 
 from common.services import crypto
-from common.models import db
+from common.models import db, user
 from pathlib import Path
 from typing import Optional
 from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
@@ -22,6 +22,7 @@ DEC_CIPHER: Optional[AESGCMSIV] = None
 ENC_CIPHER: Optional[AESGCMSIV] = None
 NONCE: Optional[bytes] = None
 CLOUD_NONCE: Optional[bytes] = None
+USER: Optional[user.User] = None
 
 DATA_PATH = Path(os.getenv("DATA_FILE"))
 SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
@@ -108,9 +109,9 @@ def check_connection():
 
 init_info()
 init_certificate_and_skey()
+
 check_connection_thread: Thread = threading.Thread(target=check_connection, daemon=True)
 check_connection_thread.start()
-
 
 app = Flask(__name__)
 

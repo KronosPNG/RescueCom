@@ -14,7 +14,7 @@ class Emergency:
         created_at: datetime.datetime,
         address: str = "",
         city: str = "",
-        street_number: int = -1,
+        street_number: int = 0,
         resolved: bool = False,
         position: tuple[float, float] = (0.0, 0.0),
         place_description: str = "",

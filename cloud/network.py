@@ -15,30 +15,29 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
         emergency (Emergency): emergency to send to Rescuers
     """
 
-    with cloud.status_lock:
-        for rescuer in cloud.RESCUERS.values():
-            if rescuer.busy:
-                continue
+    for rescuer in cloud.RESCUERS.values():
+        if rescuer.busy:
+            continue
 
-            encrypted_emergency = enc_emergency.EncryptedEmergency(
-                emergency_id=emergency.emergency_id,
-                user_uuid=emergency.user_uuid,
-                severity=emergency.severity,
-                routing_info_json="",  # unnecessary in this case
-                blob=crypto.encrypt(
-                    rescuer.enc_cipher, rescuer.nonce, emergency.pack(), b""
-                ),
-                created_at=emergency.created_at,
-            )
+        encrypted_emergency = enc_emergency.EncryptedEmergency(
+            emergency_id=emergency.emergency_id,
+            user_uuid=emergency.user_uuid,
+            severity=emergency.severity,
+            routing_info_json="",  # unnecessary in this case
+            blob=crypto.encrypt(
+                rescuer.enc_cipher, rescuer.nonce, emergency.pack(), b""
+            ),
+            created_at=emergency.created_at,
+        )
 
-            resp = requests.post(
-                rescuer.ip + "/emergency/receive",
-                json={
-                    "encrypted_emergency": base64.b64encode(
-                        str(encrypted_emergency.to_db_tuple()).encode()
-                    ).decode()
-                },
-            )
+        resp = requests.post(
+            rescuer.ip + "/emergency/receive",
+            json={
+                "encrypted_emergency": base64.b64encode(
+                    str(encrypted_emergency.to_db_tuple()).encode()
+                ).decode()
+            },
+        )
 
 def sync_new_emergency(
     emergency: emergency.Emergency | enc_emergency.EncryptedEmergency,
@@ -55,7 +54,6 @@ def sync_new_emergency(
             be synchronized and queued.
     """
 
-    with cloud.status_lock:
-        queue = cloud.get_queue()
+    queue = emergency_queue.get_instance()
 
-        queue.push_emergency(emergency)
+    queue.push_emergency(emergency)

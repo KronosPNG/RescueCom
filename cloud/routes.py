@@ -110,12 +110,10 @@ def emergency_submit() -> tuple[Any, int]:
             app.logger.error(error_response)
             return error_response
 
-        client = None
-        with cloud.status_lock:
-            client = cloud.CLIENTS[encrypted_emergency.user_uuid]
+        client = cloud.CLIENTS[encrypted_emergency.user_uuid]
 
         if not client:
-            app.logger.error("Client not found")
+            app.logger.debug("Client not found")
             raise Exception("Client not found")
 
         decrypted_blob: bytes = crypto.decrypt(
@@ -131,8 +129,8 @@ def emergency_submit() -> tuple[Any, int]:
         return jsonify(
             {"message": "Emergency submitted successfully", "data": data}
         ), 200
-    except Exception as e:
-        app.logger.error(str(data))
+    except Exception:
+        app.logger.error(traceback.format_exc())
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
@@ -151,20 +149,18 @@ def emergency_accept() -> tuple[Any, int]:
             return error_response
 
         rescuer = None
-        with cloud.status_lock:
-            if data.get("uuid") in cloud.RESCUERS:
-                rescuer = cloud.RESCUERS[data.get("uuid")]
+        if data.get("uuid") in cloud.RESCUERS:
+            rescuer = cloud.RESCUERS[data.get("uuid")]
 
         if not rescuer:
             raise Exception("Rescuer uuid not found")
 
         user_uuid: str = encrypted_emergency.user_uuid
 
-        with cloud.status_lock:
-            if user_uuid in cloud.CLIENTS:
-                client: ClientDTO = cloud.CLIENTS[user_uuid]
-            else:
-                raise Exception("Client couldn't be found")
+        if user_uuid in cloud.CLIENTS:
+            client: ClientDTO = cloud.CLIENTS[user_uuid]
+        else:
+            raise Exception("Client couldn't be found")
 
         decrypted_blob: bytes = crypto.decrypt(
             rescuer.dec_cipher, rescuer.nonce, encrypted_emergency.blob, b""
@@ -365,8 +361,17 @@ def connect() -> tuple[Any, int]:
         skey = crypto.load_signing_key(cloud.SKEY_PATH)
         signature = crypto.sign(skey, nonce)
 
-        with cloud.status_lock:
-            cloud.CLIENTS[uuid] = ClientDTO(
+        cloud.CLIENTS[uuid] = ClientDTO(
+            request.remote_addr,
+            None,
+            None,
+            client_nonce,
+            nonce,
+            is_rescuer,
+        )
+
+        if is_rescuer:
+            cloud.RESCUERS[uuid] = ClientDTO(
                 request.remote_addr,
                 None,
                 None,
@@ -374,16 +379,6 @@ def connect() -> tuple[Any, int]:
                 nonce,
                 is_rescuer,
             )
-
-            if is_rescuer:
-                cloud.RESCUERS[uuid] = ClientDTO(
-                    request.remote_addr,
-                    None,
-                    None,
-                    client_nonce,
-                    nonce,
-                    is_rescuer,
-                )
 
         app.logger.debug("Verification successful")
         return jsonify(
@@ -424,16 +419,32 @@ def pkey() -> tuple[Any, int]:
 
         enc_cipher, dec_cipher = crypto.get_ciphers(key)
 
-        with cloud.status_lock:
-            if not uuid in cloud.CLIENTS:
-                raise Exception("Perform certificate verification first")
+        if not uuid in cloud.CLIENTS:
+            raise Exception("Perform certificate verification first")
 
-            cloud.CLIENTS[uuid].enc_cipher = enc_cipher
-            cloud.CLIENTS[uuid].dec_cipher = dec_cipher
+        client_dto = cloud.CLIENTS[uuid]
 
-            if uuid in cloud.RESCUERS:
-                cloud.RESCUERS[uuid].enc_cipher = enc_cipher
-                cloud.RESCUERS[uuid].dec_cipher = dec_cipher
+        cloud.CLIENTS[uuid] = ClientDTO(
+                client_dto.ip,
+                enc_cipher,
+                dec_cipher,
+                client_dto.nonce,
+                client_dto.cloud_nonce,
+                client_dto.is_rescuer,
+                client_dto.busy
+                )
+
+        if uuid in cloud.RESCUERS:
+            cloud.RESCUERS[uuid] = ClientDTO(
+                client_dto.ip,
+                enc_cipher,
+                dec_cipher,
+                client_dto.nonce,
+                client_dto.cloud_nonce,
+                client_dto.is_rescuer,
+                client_dto.busy
+                )
+
 
         app.logger.debug("Key exchange completed")
         return jsonify(

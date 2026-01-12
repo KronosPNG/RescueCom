@@ -76,18 +76,12 @@ def decrypt_payload(b64_data: str):
     return crypto.decrypt(client.DEC_CIPHER, client.CLOUD_NONCE, encrypted_bytes, b"")
 
 
-@client.app.context_processor
-def inject_user():
-    """Injects user data into templates from local memory."""
-    return dict(user=LOCAL_USER_CACHE)
-
-
 # --- UI ROUTES ---
 
 
 @client.app.route("/legal-info/", methods=["GET"])
 def legal_info():
-    return render_template("legal-info.html", user=None)  # TODO: make global user
+    return render_template("legal-info.html", user=client.USER)
 
 
 @client.app.route("/", methods=["GET"])
@@ -114,7 +108,7 @@ def registration():
 
     if request.method == "POST":
         try:
-            is_rescuer = request.form.get("is_rescuer") == "1"
+            is_rescuer = request.form.get("is_rescuer") == "on"
             uuid = client.UUID
 
             payload = {
@@ -140,7 +134,7 @@ def registration():
 
             try:
                 b_type = BloodType[request.form.get("bloodtype")]
-                LOCAL_USER_CACHE = User(
+                LOCAL_USER_CACHE = client.USER = User(
                     uuid=client.UUID,
                     is_rescuer=is_rescuer,
                     name=request.form.get("name"),
@@ -158,9 +152,9 @@ def registration():
 
         except Exception as e:
             logger.error(f"Registration Error: {traceback.format_exc()}")
-            return render_template("error.html", status_code=500), 500
+            return render_template("error.html", user=client.USER, status_code=500), 500
 
-    return render_template("registration.html")
+    return render_template("registration.html", user=client.USER)
 
 
 @client.app.route("/myemergencies/", methods=["GET"])
@@ -169,11 +163,68 @@ def myemergencies():
         db = DatabaseManager.get_instance()
         ems = db.get_emergencies_by_user_uuid(client.UUID)
 
-        return render_template("my_emergencies.html", sent_emergencies=ems)
+        return render_template("my_emergencies.html", user=client.USER, sent_emergencies=ems)
     except Exception as e:
         logger.error(f"Get emergencies error: {traceback.format_exc()}")
-        return render_template("error.html", status_code=500), 500
+        return render_template("error.html", user=client.USER, status_code=500), 500
 
+@client.app.route("/emergency/<emergency_id>", methods=["GET"])
+def emergency_details(emergency_id):
+    try:
+        em = LOCAL_EMERGENCY_CACHE.get(emergency_id)
+        if not em:
+            db = DatabaseManager.get_instance()
+            em = db.get_emergency_by_id(client.UUID, emergency_id)
+
+            if not em:
+                return render_template("error.html", user=client.USER, status_code=404), 404
+
+        return render_template("emergency_status.html", user=client.USER, single_emergency=em)
+    except Exception as e:
+        logger.error(f"Get emergency detail error: {traceback.format_exc()}")
+        return render_template("error.html", user=client.USER, status_code=500), 500
+
+@client.app.route("/edit/<emergency_id>", methods=["GET", "POST"])
+def emergency_update(emergency_id):
+    try:
+        em = LOCAL_EMERGENCY_CACHE.get(emergency_id)
+        if not em:
+            db = DatabaseManager.get_instance()
+            em = db.get_emergency_by_id(client.UUID, emergency_id)
+
+            if not em:
+                return render_template("error.html", user=client.USER, status_code=404), 404
+    except Exception as e:
+        logger.error(f"Get emergency error: {traceback.format_exc()}")
+        return render_template("error.html", user=client.USER, status_code=500), 500
+
+    if request.method == "GET":
+        return render_template("send_emergency.html", user=client.USER, sent_emergency=em)
+    else:
+        try:
+            db = DatabaseManager.get_instance()
+            db.update_emergency(client.UUID, em.emergency_id, em)
+
+            blob = encrypt_blob(em)
+
+            payload = {
+                "emergency_id": em.emergency_id,
+                "user_uuid": client.UUID,
+                "severity": em.severity,
+                "blob": base64.b64encode(blob).decode("utf-8"),
+                "routing_info_json": "",
+            }
+
+            requests.post(
+                f"{CLOUD_URL}/emergency/update", json=payload, timeout=5
+            ).raise_for_status()
+
+            LOCAL_EMERGENCY_CACHE[em.emergency_id] = em
+
+            return redirect(url_for("index"))
+        except:
+            logger.error(f"Update emergency error: {traceback.format_exc()}")
+            return render_template("error.html", user=client.USER, status_code=404), 404
 
 @client.app.route("/new/", methods=["GET", "POST"])
 def new_emergency():
@@ -196,7 +247,7 @@ def new_emergency():
                 created_at=datetime.now(),
                 address=request.form.get("address") or "",
                 city=request.form.get("city") or "",
-                street_number=int(request.form.get("street_number") or -1),
+                street_number=int(request.form.get("street_number") or 0),
                 resolved=False,
                 position=pos,
                 place_description=request.form.get("place_description") or "",
@@ -207,7 +258,7 @@ def new_emergency():
             db = DatabaseManager.get_instance()
             out = db.insert_emergency(temp_em)
             if out is None:
-                return render_template("error.html", status_code=500), 500
+                return render_template("error.html", user=client.USER, status_code=500), 500
 
             encrypted_blob = encrypt_blob(temp_em)
 
@@ -223,13 +274,15 @@ def new_emergency():
                 f"{CLOUD_URL}/emergency/submit", json=payload, timeout=5
             ).raise_for_status()
 
+            LOCAL_EMERGENCY_CACHE[out] = temp_em
+
             return redirect(url_for("rescuee_home"))
 
         except Exception as e:
             logger.error(f"New Emergency Error: {traceback.format_exc()}")
-            return render_template("error.html", status_code=500), 500
+            return render_template("error.html", user=client.USER, status_code=500), 500
 
-    return render_template("send_emergency.html")
+    return render_template("send_emergency.html", user=client.USER)
 
 
 @client.app.route("/rescuer/", methods=["GET", "POST"])
@@ -266,11 +319,11 @@ def rescuer_home():
             return redirect(url_for("rescuer_home"))
         except Exception as e:
             logger.error(f"Accept Error: {traceback.format_exc()}")
-            return render_template("error.html", status_code=500), 500
+            return render_template("error.html", user=client.USER, status_code=500), 500
 
     # Render list from Memory Cache
     emergencies_list = list(LOCAL_EMERGENCY_CACHE.values())
-    return render_template("rescuer_home.html", received_emergencies=emergencies_list)
+    return render_template("rescuer_home.html", user=client.USER, received_emergencies=emergencies_list)
 
 
 @client.app.route("/rescuee/")
@@ -284,7 +337,7 @@ def rescuee_home():
     ]
     last_emergency = my_emergencies[-1] if my_emergencies else None
 
-    return render_template("rescuee_home.html", last_emergency=last_emergency)
+    return render_template("rescuee_home.html", user=client.USER, last_emergency=last_emergency)
 
 
 # --- INGRESS ROUTES (Called by Cloud) ---
@@ -336,9 +389,9 @@ def notification_receive():
 
 @client.app.errorhandler(404)
 def page_not_found(e):
-    return render_template("error.html", status_code=404), 404
+    return render_template("error.html", user=client.USER, status_code=404), 404
 
 
 @client.app.errorhandler(500)
 def internal_error(e):
-    return render_template("error.html", status_code=500), 500
+    return render_template("error.html", user=client.USER, status_code=500), 500

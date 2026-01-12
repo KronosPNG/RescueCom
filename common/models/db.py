@@ -165,17 +165,17 @@ class DatabaseManager:
         insert_query: str = """
             INSERT INTO emergency (emergency_id, user_uuid, position, address, city, street_number, place_description,
             photo_b64, severity, resolved, emergency_type, description, details_json, created_at)
-            VALUES ((SELECT IFNULL(MAX(emergency_id), 0) + 1 FROM emergency), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Begin transaction
         self.conn.execute("BEGIN")
         try:
             self.cursor.execute(get_next_id_query)
-            next_id = self.cursor.fetchone()
+            next_id = self.cursor.fetchone()[0]
             # Skip the field `id`
             values = emergency.to_db_tuple()[1:]
-            self.conn.execute(insert_query, (next_id, values))
+            self.conn.execute(insert_query, (next_id, *values))
             self.conn.commit()
         except self.conn.Error as e:
             self.conn.rollback()
@@ -766,7 +766,7 @@ class DatabaseManager:
         update_query = """
             UPDATE encrypted_emergency
             SET severity = ?, routing_info_json = ?, blob = ?, created_at = ?
-            WHERE user_uuid = ?, emergency_id = ?
+            WHERE user_uuid = ? AND emergency_id = ?
         """
 
         # Beging transaction
