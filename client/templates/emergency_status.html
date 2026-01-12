@@ -9,32 +9,42 @@
 
             <!-- Header: ID, Priorità, Stato -->
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <strong>ID: {{ single_emergency.emergency_id }} | PRIORITÀ: {{ single_emergency.severity }}</strong>
+                <strong>
+                    ID: {{ single_emergency.emergency_id }} |
+                    PRIORITÀ: {{ single_emergency.severity }}
+                </strong>
                 <span class="badge bg-secondary">
-                    {% if single_emergency.resolved %}Risolta{% else %}In corso{% endif %}
+                    {% if single_emergency.resolved %}Accettata{% else %}In corso{% endif %}
                 </span>
             </div>
 
-            <!-- Informazioni principali -->
-            <h5>Informazioni Utente</h5>
-            <p>UUID: {{ single_emergency.user_uuid }}</p>
-
+            <!-- Tipo emergenza -->
             <h5>Tipo emergenza</h5>
             <p>{{ single_emergency.emergency_type }}</p>
 
+            <!-- Data -->
             <h5>Data creazione</h5>
             <p>{{ single_emergency.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
 
+            <!-- MAPPA -->
+            {% if single_emergency.position %}
             <h5>Posizione</h5>
-            <p>Lat: {{ single_emergency.position[0] }}, Lng: {{ single_emergency.position[1] }}</p>
+            <div id="map"
+                 style="height: 300px; width: 100%; display: none;"
+                 class="mb-3">
+            </div>
+            {% endif %}
 
+            <!-- Descrizione -->
             <h5>Descrizione</h5>
             <p>{{ single_emergency.description }}</p>
 
             <!-- Foto -->
             {% if single_emergency.photo_b64 %}
             <h5>Foto</h5>
-            <img src="data:image/jpeg;base64,{{ single_emergency.photo_b64 }}" alt="Foto emergenza" class="img-fluid">
+            <img src="data:image/jpeg;base64,{{ single_emergency.photo_b64 }}"
+                 alt="Foto emergenza"
+                 class="img-fluid">
             {% endif %}
 
             <!-- Dettagli JSON -->
@@ -44,12 +54,47 @@
             {% endif %}
 
             <!-- Pulsanti -->
-            <!-- /send_emergency.html -->
-            <a href="/edit/{{ single_emergency.emergency_id }}" class="btn btn-primary mt-3">Modifica richiesta</a>
-            <a href="/my_emergencies" class="btn btn-secondary mt-3">Torna indietro</a>
+            <a href="/edit/{{ single_emergency.emergency_id }}"
+               class="btn btn-primary mt-3">
+                Modifica richiesta
+            </a>
+
+            <a href="/my_emergencies/"
+               class="btn btn-secondary mt-3">
+                Torna indietro
+            </a>
 
         </div>
     </div>
-
 </div>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    if (typeof L !== "undefined") {
+
+        const mapDiv = document.getElementById('map');
+        mapDiv.style.display = "block";
+
+        const map = L.map(mapDiv).setView(
+            [{{ single_emergency.position[0] }}, {{ single_emergency.position[1] }}],
+        13
+    );
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.marker([
+            {{ single_emergency.position[0] }},
+        {{ single_emergency.position[1] }}
+    ]).addTo(map);
+
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
+    }
+</script>
 {% endblock %}
