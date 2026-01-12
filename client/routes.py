@@ -280,7 +280,7 @@ def emergency_receive():
         emergency = Emergency.unpack(data['emergency_id'], data['user_uuid'], decrypted_blob)
 
         db = DatabaseManager.get_instance()
-        db.insert_emergency(emergency)
+        db.insert_emergency_from_rescuee(emergency)
 
         # Update Memory Cache
         LOCAL_EMERGENCY_CACHE[emergency.emergency_id] = emergency
