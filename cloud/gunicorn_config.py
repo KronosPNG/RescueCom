@@ -5,7 +5,8 @@ import multiprocessing
 bind = "0.0.0.0:8000"
 
 # Worker settings
-workers = 2 * multiprocessing.cpu_count() + 1
+#workers = 2 * multiprocessing.cpu_count() + 1
+workers = 1
 
 # Logging
 accesslog = os.getenv("LOGS_DIR") + "/access.log"

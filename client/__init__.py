@@ -6,12 +6,13 @@ import datetime
 import time
 
 from common.services import crypto
+from common.models import db, user
 from pathlib import Path
 from typing import Optional
 from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
 from flask import Flask
-from dotenv import load_dotenv
 from threading import Thread, Lock
+from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env")
 
@@ -21,6 +22,7 @@ DEC_CIPHER: Optional[AESGCMSIV] = None
 ENC_CIPHER: Optional[AESGCMSIV] = None
 NONCE: Optional[bytes] = None
 CLOUD_NONCE: Optional[bytes] = None
+USER: Optional[user.User] = None
 
 DATA_PATH = Path(os.getenv("DATA_FILE"))
 SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
@@ -29,6 +31,8 @@ SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
 CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
     os.getenv("CERTIFICATE_NAME", None)
 )
+
+db.DatabaseManager.get_instance(Path(os.getenv("DB_DIR", None)) / Path(os.getenv("DB_NAME", None)))
 
 CONNECTED: bool = False
 
@@ -43,7 +47,9 @@ def init_info():
         DATA_PATH.touch()
 
         with DATA_PATH.open("w") as f:
-            f.write(str(uuid.uuid4()) + "\n" + "1")
+            UUID = str(uuid.uuid4())
+
+            f.write(UUID)
     else:
         with DATA_PATH.open() as f:
             UUID = f.readline().strip()
@@ -103,9 +109,9 @@ def check_connection():
 
 init_info()
 init_certificate_and_skey()
+
 check_connection_thread: Thread = threading.Thread(target=check_connection, daemon=True)
 check_connection_thread.start()
-
 
 app = Flask(__name__)
 

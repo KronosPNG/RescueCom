@@ -22,7 +22,7 @@ class DatabaseManager:
         self.cursor = self.conn.cursor()
         # Enable Foreign Key constraints. It's disabled by default
         # See: https://sqlite.org/foreignkeys.html "Overview" and "2. Enabling Foreign Key Support"
-        self.conn.execute("PRAGMA foreign_keys = ON")
+        # self.conn.execute("PRAGMA foreign_keys = ON")
         self.__init_db()
 
     @classmethod
@@ -90,7 +90,6 @@ class DatabaseManager:
             details_json TEXT,
             created_at DATE DEFAULT CURRENT_TIMESTAMP,
 
-            FOREIGN KEY (user_uuid) REFERENCES user(uuid)
             PRIMARY KEY (emergency_id, user_uuid)
         );
 
@@ -102,16 +101,6 @@ class DatabaseManager:
             blob BLOB NOT NULL,
             created_at DATE DEFAULT CURRENT_TIMESTAMP,
 
-            /*
-                In order to prevent the violation of
-                the foreign key constraint, when the user
-                receives an emergency from another user,
-                the sender must also send their user_uuid,
-                and the receiver must insert it into the
-                `user` table before inserting the newly
-                received emergency.
-            */
-            -- FOREIGN KEY (user_uuid) REFERENCES user(uuid),
             PRIMARY KEY (emergency_id, user_uuid)
         );
         """
@@ -169,24 +158,30 @@ class DatabaseManager:
                 and the original database error is re-raised.
         """
 
+        get_next_id_query = """
+            SELECT IFNULL(MAX(emergency_id), 0) + 1 FROM emergency
+        """
+
         insert_query: str = """
-            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64,
-            severity, resolved, emergency_type, description, details_json, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO emergency (emergency_id, user_uuid, position, address, city, street_number, place_description,
+            photo_b64, severity, resolved, emergency_type, description, details_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Begin transaction
         self.conn.execute("BEGIN")
         try:
+            self.cursor.execute(get_next_id_query)
+            next_id = self.cursor.fetchone()[0]
             # Skip the field `id`
             values = emergency.to_db_tuple()[1:]
-            self.conn.execute(insert_query, values)
+            self.conn.execute(insert_query, (next_id, *values))
             self.conn.commit()
         except self.conn.Error as e:
             self.conn.rollback()
             raise e
 
-        return self.cursor.lastrowid
+        return next_id
 
     def insert_emergency_from_rescuee(self, emergency: emergency.Emergency) -> None:
         """
@@ -771,7 +766,7 @@ class DatabaseManager:
         update_query = """
             UPDATE encrypted_emergency
             SET severity = ?, routing_info_json = ?, blob = ?, created_at = ?
-            WHERE user_uuid = ?, emergency_id = ?
+            WHERE user_uuid = ? AND emergency_id = ?
         """
 
         # Beging transaction

@@ -1,3 +1,4 @@
+import traceback
 import base64
 import datetime
 import os
@@ -74,6 +75,7 @@ def create_user_from_data(
         if field not in data or data.get(field) is None
     ]
     if missing_fields:
+        app.logger.error(traceback.format_exc())
         return None, (
             jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}),
             400,
@@ -86,31 +88,32 @@ def create_user_from_data(
             name=data.get("name"),
             surname=data.get("surname"),
             birthday=data.get("birthday"),
-            blood_type=data.get("blood_type"),
+            blood_type=user.BloodType[data.get("blood_type")],
             health_info_json=data.get("health_info_json"),
         )
         return new_user, None
     except (ValueError, TypeError) as e:
-        return None, (jsonify({"error": f"Invalid data format: {str(e)}"}), 400)
+        return None, (jsonify({"error": f"Invalid data format: {traceback.format_exc()}"}), 400)
 
 
-@app.route("/emergency/submit", methods=["POST"])
+@app.route("/emergency/submit/", methods=["POST"])
 def emergency_submit() -> tuple[Any, int]:
     """Submit an emergency"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         encrypted_emergency, error_response = extract_emergency_fields(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
-        client = None
-        with cloud.status_lock:
-            client = cloud.CLIENTS[encrypted_emergency.user_uuid]
+        client = cloud.CLIENTS[encrypted_emergency.user_uuid]
 
         if not client:
+            app.logger.debug("Client not found")
             raise Exception("Client not found")
 
         decrypted_blob: bytes = crypto.decrypt(
@@ -122,40 +125,42 @@ def emergency_submit() -> tuple[Any, int]:
             decrypted_blob,
         )
 
+        app.logger.debug(data)
         return jsonify(
             {"message": "Emergency submitted successfully", "data": data}
         ), 200
-    except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+    except Exception:
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/emergency/accept", methods=["POST"])
+@app.route("/emergency/accept/", methods=["POST"])
 def emergency_accept() -> tuple[Any, int]:
     """Accept an emergency"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         encrypted_emergency, error_response = extract_emergency_fields(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         rescuer = None
-        with cloud.status_lock:
-            if data.get("uuid") in cloud.RESCUERS:
-                rescuer = cloud.RESCUERS[data.get("uuid")]
+        if data.get("uuid") in cloud.RESCUERS:
+            rescuer = cloud.RESCUERS[data.get("uuid")]
 
         if not rescuer:
             raise Exception("Rescuer uuid not found")
 
         user_uuid: str = encrypted_emergency.user_uuid
 
-        with cloud.status_lock:
-            if user_uuid in cloud.CLIENTS:
-                client: ClientDTO = cloud.CLIENTS[user_uuid]
-            else:
-                raise Exception("Client couldn't be found")
+        if user_uuid in cloud.CLIENTS:
+            client: ClientDTO = cloud.CLIENTS[user_uuid]
+        else:
+            raise Exception("Client couldn't be found")
 
         decrypted_blob: bytes = crypto.decrypt(
             rescuer.dec_cipher, rescuer.nonce, encrypted_emergency.blob, b""
@@ -180,26 +185,30 @@ def emergency_accept() -> tuple[Any, int]:
                 timeout=3,
             )
         except Exception as msg_err:
-            app.logger.error(f"Failed to send notification: {str(msg_err)}")
+            app.logger.error(str(msg_err))
 
+        app.logger.debug(data)
         return jsonify(
             {"message": "Emergency accepted successfully", "data": data}
         ), 200
 
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/emergency/update", methods=["POST"])
+@app.route("/emergency/update/", methods=["POST"])
 def emergency_update() -> tuple[Any, int]:
     """Update an emergency"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         encrypted_emergency, error_response = extract_emergency_fields(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         persistence.update_encrypted_emergency(
@@ -208,95 +217,117 @@ def emergency_update() -> tuple[Any, int]:
             encrypted_emergency,
         )
 
+        app.logger.debug(data)
         return jsonify({"message": "Emergency updated successfully", "data": data}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/emergency/delete", methods=["POST"])
+@app.route("/emergency/delete/", methods=["POST"])
 def emergency_delete() -> tuple[Any, int]:
     """Delete an emergency"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         user_uuid: Optional[str] = data.get("user_uuid")
         emergency_id: Optional[int] = data.get("emergency_id")
 
         if not user_uuid or not emergency_id:
+            app.logger.error("Missing required fields: user_uuid and emergency_id")
             return jsonify(
                 {"error": "Missing required fields: user_uuid and emergency_id"}
             ), 400
 
         persistence.delete_encrypted_emergency(user_uuid, emergency_id)
 
+        app.logger.debug(data)
         return jsonify({"message": "Emergency deleted successfully", "data": data}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/user/save", methods=["POST"])
+@app.route("/user/save/", methods=["POST"])
 def user_save() -> tuple[Any, int]:
     """Save a user"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         new_user, error_response = create_user_from_data(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         persistence.save_user(new_user)
+
+        app.logger.debug(data)
         return jsonify({"message": "User saved successfully", "data": data}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/user/update", methods=["POST"])
+@app.route("/user/update/", methods=["POST"])
 def user_update() -> tuple[Any, int]:
     """Update a user"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         updated_user, error_response = create_user_from_data(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         persistence.update_user(updated_user.uuid, updated_user)
+
+        app.logger.debug(data)
         return jsonify({"message": "User updated successfully", "data": data}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/user/delete", methods=["POST"])
+@app.route("/user/delete/", methods=["POST"])
 def user_delete() -> tuple[Any, int]:
     """Delete a user"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         uuid: Optional[str] = data.get("uuid")
 
         if not uuid:
+            app.logger.error("Missing required field: uuid")
             return jsonify({"error": "Missing required field: uuid"}), 400
 
         persistence.delete_user(uuid)
+
+        app.logger.debug(data)
         return jsonify({"message": "User deleted successfully", "uuid": uuid}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/connect", methods=["POST"])
+@app.route("/connect/", methods=["POST"])
 def connect() -> tuple[Any, int]:
     """Connect with a client"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         uuid: Optional[str] = data.get("uuid")
@@ -312,6 +343,7 @@ def connect() -> tuple[Any, int]:
             or not client_signature
             or is_rescuer is None
         ):
+            app.logger.error("Missing required fields")
             return jsonify({"error": "Missing required fields"}), 400
 
         cert_bytes = bytes.fromhex(cert_bytes)
@@ -320,6 +352,7 @@ def connect() -> tuple[Any, int]:
 
         client_certificate = crypto.decode_certificate(cert_bytes)
         if not crypto.verify_certificate(client_certificate, client_signature, client_nonce):
+            app.logger.error("Couldn't verify certificate or signature")
             return jsonify({"error": "Couldn't verify certificate or signature"}), 400
 
         certificate = crypto.load_certificate(cloud.CERTIFICATE_PATH)
@@ -328,8 +361,17 @@ def connect() -> tuple[Any, int]:
         skey = crypto.load_signing_key(cloud.SKEY_PATH)
         signature = crypto.sign(skey, nonce)
 
-        with cloud.status_lock:
-            cloud.CLIENTS[uuid] = ClientDTO(
+        cloud.CLIENTS[uuid] = ClientDTO(
+            request.remote_addr,
+            None,
+            None,
+            client_nonce,
+            nonce,
+            is_rescuer,
+        )
+
+        if is_rescuer:
+            cloud.RESCUERS[uuid] = ClientDTO(
                 request.remote_addr,
                 None,
                 None,
@@ -338,16 +380,7 @@ def connect() -> tuple[Any, int]:
                 is_rescuer,
             )
 
-            if is_rescuer:
-                cloud.RESCUERS[uuid] = ClientDTO(
-                    request.remote_addr,
-                    None,
-                    None,
-                    client_nonce,
-                    nonce,
-                    is_rescuer,
-                )
-
+        app.logger.debug("Verification successful")
         return jsonify(
             {
                 "message": "Verification successful",
@@ -357,21 +390,24 @@ def connect() -> tuple[Any, int]:
             }
         ), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/pkey", methods=["POST"])
+@app.route("/pkey/", methods=["POST"])
 def pkey() -> tuple[Any, int]:
     """Connect with a client"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         uuid: Optional[str] = data.get("uuid")
         pkey_bytes = data.get("public_key")
 
         if not uuid or not pkey_bytes:
+            app.logger.error("Missing required fields")
             return jsonify({"error": "Missing required fields"}), 400
 
         pkey_bytes = bytes.fromhex(pkey_bytes)
@@ -383,24 +419,42 @@ def pkey() -> tuple[Any, int]:
 
         enc_cipher, dec_cipher = crypto.get_ciphers(key)
 
-        with cloud.status_lock:
-            if not uuid in cloud.CLIENTS:
-                raise Exception("Perform certificate verification first")
+        if not uuid in cloud.CLIENTS:
+            raise Exception("Perform certificate verification first")
 
-            cloud.CLIENTS[uuid].enc_cipher = enc_cipher
-            cloud.CLIENTS[uuid].dec_cipher = dec_cipher
+        client_dto = cloud.CLIENTS[uuid]
 
-            if uuid in cloud.RESCUERS:
-                cloud.RESCUERS[uuid].enc_cipher = enc_cipher
-                cloud.RESCUERS[uuid].dec_cipher = dec_cipher
+        cloud.CLIENTS[uuid] = ClientDTO(
+                client_dto.ip,
+                enc_cipher,
+                dec_cipher,
+                client_dto.nonce,
+                client_dto.cloud_nonce,
+                client_dto.is_rescuer,
+                client_dto.busy
+                )
 
+        if uuid in cloud.RESCUERS:
+            cloud.RESCUERS[uuid] = ClientDTO(
+                client_dto.ip,
+                enc_cipher,
+                dec_cipher,
+                client_dto.nonce,
+                client_dto.cloud_nonce,
+                client_dto.is_rescuer,
+                client_dto.busy
+                )
+
+
+        app.logger.debug("Key exchange completed")
         return jsonify(
             {"message": "Key exchange completed", "pkey": crypto.encode_ecdh_pkey(pkey).hex()}
         ), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/health", methods=["GET"])
+@app.route("/health/", methods=["GET"])
 def health_check() -> tuple[Response, int]:
     return jsonify({"message": "Cloud is healthy"}), 200
