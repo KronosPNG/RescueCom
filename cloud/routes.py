@@ -96,16 +96,18 @@ def create_user_from_data(
         return None, (jsonify({"error": f"Invalid data format: {traceback.format_exc()}"}), 400)
 
 
-@app.route("/emergency/submit", methods=["POST"])
+@app.route("/emergency/submit/", methods=["POST"])
 def emergency_submit() -> tuple[Any, int]:
     """Submit an emergency"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         encrypted_emergency, error_response = extract_emergency_fields(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         client = None
@@ -134,16 +136,18 @@ def emergency_submit() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/emergency/accept", methods=["POST"])
+@app.route("/emergency/accept/", methods=["POST"])
 def emergency_accept() -> tuple[Any, int]:
     """Accept an emergency"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         encrypted_emergency, error_response = extract_emergency_fields(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         rescuer = None
@@ -197,16 +201,18 @@ def emergency_accept() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/emergency/update", methods=["POST"])
+@app.route("/emergency/update/", methods=["POST"])
 def emergency_update() -> tuple[Any, int]:
     """Update an emergency"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         encrypted_emergency, error_response = extract_emergency_fields(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         persistence.update_encrypted_emergency(
@@ -222,12 +228,13 @@ def emergency_update() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/emergency/delete", methods=["POST"])
+@app.route("/emergency/delete/", methods=["POST"])
 def emergency_delete() -> tuple[Any, int]:
     """Delete an emergency"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         user_uuid: Optional[str] = data.get("user_uuid")
@@ -248,16 +255,18 @@ def emergency_delete() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/user/save", methods=["POST"])
+@app.route("/user/save/", methods=["POST"])
 def user_save() -> tuple[Any, int]:
     """Save a user"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         new_user, error_response = create_user_from_data(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         persistence.save_user(new_user)
@@ -269,16 +278,18 @@ def user_save() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/user/update", methods=["POST"])
+@app.route("/user/update/", methods=["POST"])
 def user_update() -> tuple[Any, int]:
     """Update a user"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         updated_user, error_response = create_user_from_data(data)
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         persistence.update_user(updated_user.uuid, updated_user)
@@ -290,12 +301,13 @@ def user_update() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/user/delete", methods=["POST"])
+@app.route("/user/delete/", methods=["POST"])
 def user_delete() -> tuple[Any, int]:
     """Delete a user"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         uuid: Optional[str] = data.get("uuid")
@@ -313,12 +325,13 @@ def user_delete() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/connect", methods=["POST"])
+@app.route("/connect/", methods=["POST"])
 def connect() -> tuple[Any, int]:
     """Connect with a client"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         uuid: Optional[str] = data.get("uuid")
@@ -386,12 +399,13 @@ def connect() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/pkey", methods=["POST"])
+@app.route("/pkey/", methods=["POST"])
 def pkey() -> tuple[Any, int]:
     """Connect with a client"""
     try:
         data, error_response = get_validated_json()
         if error_response:
+            app.logger.error(error_response)
             return error_response
 
         uuid: Optional[str] = data.get("uuid")
@@ -430,6 +444,6 @@ def pkey() -> tuple[Any, int]:
         return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
-@app.route("/health", methods=["GET"])
+@app.route("/health/", methods=["GET"])
 def health_check() -> tuple[Response, int]:
     return jsonify({"message": "Cloud is healthy"}), 200

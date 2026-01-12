@@ -204,7 +204,6 @@ def new_emergency():
                 details_json=request.form.get("details_json") or "",
             )
 
-            print(temp_em.to_db_tuple())
             db = DatabaseManager.get_instance()
             out = db.insert_emergency(temp_em)
             if out is None:

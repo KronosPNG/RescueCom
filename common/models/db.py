@@ -22,7 +22,7 @@ class DatabaseManager:
         self.cursor = self.conn.cursor()
         # Enable Foreign Key constraints. It's disabled by default
         # See: https://sqlite.org/foreignkeys.html "Overview" and "2. Enabling Foreign Key Support"
-        self.conn.execute("PRAGMA foreign_keys = ON")
+        #self.conn.execute("PRAGMA foreign_keys = ON")
         self.__init_db()
 
     @classmethod
