@@ -6,7 +6,7 @@ import random
 import json
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, abort, jsonify
-
+from common.models.db import DatabaseManager
 # Import existing app and network logic
 import client
 from client import network
@@ -96,7 +96,6 @@ def index():
 @client.app.route('/welcome/')
 def welcome():
     return render_template('welcome.html')
-
 
 @client.app.route('/registration/', methods=['GET', 'POST'])
 def registration():
@@ -188,16 +187,22 @@ def new_emergency():
                 details_json=request.form.get('details_json') or ""
             )
 
+            db = DatabaseManager.get_instance()
+            out = db.insert_emergency(temp_em)
+            if out is None:
+                return render_template('error.html', status_code=500), 500
+
             # Encrypt and Send
             encrypted_blob = encrypt_blob(temp_em)
 
             payload = {
-                "emergency_id": em_id,
+                "emergency_id": out,
                 "user_uuid": client.UUID,
                 "severity": temp_em.severity,
                 "blob": base64.b64encode(encrypted_blob).decode('utf-8'),
                 "routing_info_json": ""
             }
+
 
             requests.post(f"{CLOUD_URL}/emergency/submit", json=payload, timeout=5).raise_for_status()
 
@@ -274,6 +279,8 @@ def emergency_receive():
         decrypted_blob = decrypt_payload(data['blob'])
         emergency = Emergency.unpack(data['emergency_id'], data['user_uuid'], decrypted_blob)
 
+        db = DatabaseManager.get_instance()
+        db.insert_emergency(emergency)
         # Update Memory Cache
         LOCAL_EMERGENCY_CACHE[emergency.emergency_id] = emergency
 
