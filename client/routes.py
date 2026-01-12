@@ -1,6 +1,6 @@
-import uuid
 import logging
 import base64
+
 import requests
 import random
 import json
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # --- IN-MEMORY STORAGE (Replaces DatabaseManager) ---
 # These act as a local cache for the running session.
 # Data is lost when the client app restarts.
+# TODO: sync with the local database
 LOCAL_USER_CACHE = None
 LOCAL_EMERGENCY_CACHE = {}  # Format: {emergency_id: EmergencyObject}
 
@@ -105,11 +106,11 @@ def registration():
         try:
             # 1. Prepare Data
             is_rescuer = request.form.get('is_rescuer') == 'on'
-            new_uuid = str(uuid.uuid4())
+            uuid = client.UUID
 
             # 2. Send to Cloud (User Save)
             payload = {
-                "uuid": new_uuid,
+                "uuid": uuid,
                 "is_rescuer": is_rescuer,
                 "name": request.form.get('name'),
                 "surname": request.form.get('surname'),
@@ -121,12 +122,11 @@ def registration():
             requests.post(f"{CLOUD_URL}/user/save", json=payload, timeout=5).raise_for_status()
 
             # 3. Update Client State
-            client.UUID = new_uuid
             client.IS_RESCUER = is_rescuer
 
             # Persist minimal ID to file so we know who we are on restart
             with client.DATA_PATH.open('w') as f:
-                f.write(f"{new_uuid}\n{'1' if is_rescuer else '0'}")
+                f.write(f"{client.UUID}\n{'1' if is_rescuer else '0'}")
 
             # 4. Connect
             perform_handshake()
@@ -135,7 +135,7 @@ def registration():
             try:
                 b_type = BloodType[request.form.get('bloodtype')]
                 LOCAL_USER_CACHE = User(
-                    uuid=new_uuid,
+                    uuid=client.UUID,
                     is_rescuer=is_rescuer,
                     name=request.form.get('name'),
                     surname=request.form.get('surname'),
