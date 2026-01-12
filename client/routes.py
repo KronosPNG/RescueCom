@@ -31,8 +31,9 @@ def perform_handshake():
     """
     Initiates the connection sequence (Certificate + Key Exchange).
     """
-    if not client.UUID:
-        return False
+
+    if client.ENC_CIPHER or client.DEC_CIPHER:
+        return None
 
     try:
         enc, dec, nonce, c_nonce = network.connect(
@@ -47,10 +48,8 @@ def perform_handshake():
         client.DEC_CIPHER = dec
         client.NONCE = nonce
         client.CLOUD_NONCE = c_nonce
-        return True
     except Exception as e:
         logger.error(f"Handshake failed: {e}")
-        return False
 
 
 def encrypt_blob(emergency_obj) -> bytes:
