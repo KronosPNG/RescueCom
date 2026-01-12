@@ -1,7 +1,9 @@
+import logging
 import datetime
 import os
 
 from flask import Flask
+from flask.logging import default_handler
 from multiprocessing import Manager
 from common.services import emergency_queue, crypto
 from pathlib import Path
@@ -52,5 +54,10 @@ def init_certificate_and_skey():
 
 
 init_certificate_and_skey()
+
+gunicorn_logger = logging.getLogger("gunicorn.error")
+app.logger.removeHandler(default_handler)
+app.logger.addHandler(gunicorn_logger)
+app.logger.setLevel(gunicorn_logger.level)
 
 from . import routes

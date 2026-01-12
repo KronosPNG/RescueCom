@@ -16,7 +16,8 @@ RUN adduser --gid 1000 --uid 1000 \
 COPY --from=tianon/gosu /gosu /usr/local/bin/
 
 COPY ./common ./common
-COPY ./cloud/entrypoint.sh entrypoint.sh
+COPY ./cloud/entrypoint.sh ./entrypoint.sh
+COPY ./cloud/gunicorn_config.py ./gunicorn_config.py
 COPY ./cloud ./cloud
 
 RUN chown -R appuser:appgroup /app
