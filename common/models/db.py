@@ -148,7 +148,7 @@ class DatabaseManager:
             self.conn.rollback()
             raise e
 
-    def insert_emergency(self, emergency: emergency.Emergency) -> None:
+    def insert_emergency(self, emergency: emergency.Emergency) -> int | None:
         """
         Inserts an Emergency into the database.
 
@@ -159,6 +159,10 @@ class DatabaseManager:
         Args:
             emergency (emergency.Emergency): The Emergency instance to be
                 inserted into the database.
+
+        Returns:
+        int | None: The ID of the newly inserted emergency record, or `None`
+            if the database does not provide a last inserted row ID.
 
         Raises:
             sqlite3.Error: If the insertion fails, the transaction is rolled back
@@ -181,6 +185,8 @@ class DatabaseManager:
         except self.conn.Error as e:
             self.conn.rollback()
             raise e
+
+        return self.cursor.lastrowid
 
     def insert_encrypted_emergency(
         self, enc_emergency: enc_emergency.EncryptedEmergency
