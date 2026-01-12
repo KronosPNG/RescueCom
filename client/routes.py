@@ -281,6 +281,7 @@ def emergency_receive():
 
         db = DatabaseManager.get_instance()
         db.insert_emergency(emergency)
+
         # Update Memory Cache
         LOCAL_EMERGENCY_CACHE[emergency.emergency_id] = emergency
 
