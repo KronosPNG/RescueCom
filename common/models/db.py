@@ -188,6 +188,42 @@ class DatabaseManager:
 
         return self.cursor.lastrowid
 
+    def insert_emergency_from_rescuee(self, emergency: emergency.Emergency) -> None:
+        """
+        Inserts an Emergency from the Rescuee into the database.
+
+        The operation is wrapped in an explicit transaction:
+        the transaction is committed on success and rolled back if an error
+        occurs.
+
+        Args:
+            emergency (emergency.Emergency): The Emergency instance to be
+                inserted into the database.
+
+        Returns:
+        int | None: The ID of the newly inserted emergency record, or `None`
+            if the database does not provide a last inserted row ID.
+
+        Raises:
+            sqlite3.Error: If the insertion fails, the transaction is rolled back
+                and the original database error is re-raised.
+        """
+
+        insert_query: str = """
+            INSERT INTO emergency (emergency_id, user_uuid, position, address, city, street_number, place_description, photo_b64,
+            severity, resolved, emergency_type, description, details_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
+        # Begin transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.conn.execute(insert_query, emergency.to_db_tuple())
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
+
     def insert_encrypted_emergency(
         self, enc_emergency: enc_emergency.EncryptedEmergency
     ) -> None:
