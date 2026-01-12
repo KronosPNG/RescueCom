@@ -78,7 +78,7 @@ class DatabaseManager:
             emergency_id INTEGER NOT NULL,
             user_uuid TEXT NOT NULL,
             position TEXT DEFAULT '0,0',
-            address TEXT NOT,
+            address TEXT,
             city TEXT,
             street_number INTEGER,
             place_description TEXT,
@@ -148,7 +148,7 @@ class DatabaseManager:
             self.conn.rollback()
             raise e
 
-    def insert_emergency(self, emergency: emergency.Emergency) -> None:
+    def insert_emergency(self, emergency: emergency.Emergency) -> int | None:
         """
         Inserts an Emergency into the database.
 
@@ -159,6 +159,10 @@ class DatabaseManager:
         Args:
             emergency (emergency.Emergency): The Emergency instance to be
                 inserted into the database.
+
+        Returns:
+        int | None: The ID of the newly inserted emergency record, or `None`
+            if the database does not provide a last inserted row ID.
 
         Raises:
             sqlite3.Error: If the insertion fails, the transaction is rolled back
@@ -177,6 +181,44 @@ class DatabaseManager:
             # Skip the field `id`
             values = emergency.to_db_tuple()[1:]
             self.conn.execute(insert_query, values)
+            self.conn.commit()
+        except self.conn.Error as e:
+            self.conn.rollback()
+            raise e
+
+        return self.cursor.lastrowid
+
+    def insert_emergency_from_rescuee(self, emergency: emergency.Emergency) -> None:
+        """
+        Inserts an Emergency from the Rescuee into the database.
+
+        The operation is wrapped in an explicit transaction:
+        the transaction is committed on success and rolled back if an error
+        occurs.
+
+        Args:
+            emergency (emergency.Emergency): The Emergency instance to be
+                inserted into the database.
+
+        Returns:
+        int | None: The ID of the newly inserted emergency record, or `None`
+            if the database does not provide a last inserted row ID.
+
+        Raises:
+            sqlite3.Error: If the insertion fails, the transaction is rolled back
+                and the original database error is re-raised.
+        """
+
+        insert_query: str = """
+            INSERT INTO emergency (emergency_id, user_uuid, position, address, city, street_number, place_description, photo_b64,
+            severity, resolved, emergency_type, description, details_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
+        # Begin transaction
+        self.conn.execute("BEGIN")
+        try:
+            self.conn.execute(insert_query, emergency.to_db_tuple())
             self.conn.commit()
         except self.conn.Error as e:
             self.conn.rollback()
@@ -728,7 +770,7 @@ class DatabaseManager:
 
         update_query = """
             UPDATE encrypted_emergency
-            severity = ?, routing_info_json = ?, blob = ?, created_at = ?
+            SET severity = ?, routing_info_json = ?, blob = ?, created_at = ?
             WHERE user_uuid = ?, emergency_id = ?
         """
 

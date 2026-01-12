@@ -1,6 +1,6 @@
-from enum import Enum
 import heapq
-from typing import List, Tuple
+from enum import Enum
+from typing import Self
 
 from common.models.emergency import Emergency
 from common.models.enc_emergency import EncryptedEmergency
@@ -13,13 +13,23 @@ class SeverityType(Enum):
 
 
 class EmergencyQueue:
-    queue: List[List[Tuple[int, float, Emergency | EncryptedEmergency]],] = [
+    __instance = None
+    __allow_init = False
+
+    min_medium_sev_score = 35
+    min_high_sev_score = 65
+    queue: list[list[tuple[int, float, Emergency | EncryptedEmergency]],] = [
         [],
         [],
         [],
     ]
 
     def __init__(self) -> None:
+        if not EmergencyQueue.__allow_init:
+            raise TypeError(
+                "EmergencyQueue singleton must be created using EmergencyQueue.get_instance"
+            )
+
         heapq.heapify_max(self.queue[SeverityType.LOW.value])  # Low severity
         heapq.heapify_max(self.queue[SeverityType.MEDIUM.value])  # Medium severity
         heapq.heapify_max(self.queue[SeverityType.HIGH.value])  # High severity
@@ -27,6 +37,22 @@ class EmergencyQueue:
         self.low_queue = self.queue[SeverityType.LOW.value]
         self.medium_queue = self.queue[SeverityType.MEDIUM.value]
         self.high_queue = self.queue[SeverityType.HIGH.value]
+
+    @classmethod
+    def get_instance(cls: type[Self]) -> Self:
+        """
+        Returns the singleton instance of EmergencyQueue.
+
+        Returns:
+            EmergencyQueue: The singleton instance of the emergency queue.
+        """
+
+        if cls.__instance is None:
+            cls.__allow_init = True
+            cls.__instance = cls()
+            cls.__allow_init = False
+
+        return cls.__instance
 
     def push_emergency(self, emergency: Emergency | EncryptedEmergency):
         """
@@ -40,28 +66,35 @@ class EmergencyQueue:
         Args:
             emergency (Emergency | EncryptedEmergency): The emergency instance
                 to be added to the queue.
+
+        Raises:
+            ValueError: If the severity level of the emergency is invalid
+                (e.g., negative or outside defined severity thresholds).
         """
 
         severity = emergency.severity
         created_at = -emergency.created_at.timestamp()
 
-        # TODO: Remove magic numbers
         # TODO: Establish the maximum possible score
-        if (severity >= 0) and (severity < 35):
+        if (severity >= 0) and (severity < self.min_medium_sev_score):
             heapq.heappush_max(
                 self.low_queue,
                 (severity, created_at, (emergency)),
             )
-        elif (severity >= 35) and (severity < 65):
+        elif (severity >= self.min_medium_sev_score) and (
+            severity < self.min_high_sev_score
+        ):
             heapq.heappush_max(
                 self.medium_queue,
                 (severity, created_at, emergency),
             )
-        else:
+        elif severity >= self.min_high_sev_score:
             heapq.heappush_max(
                 self.high_queue,
                 (severity, created_at, emergency),
             )
+        else:
+            raise ValueError("Invalid severity level")
 
     def pop_emergency(
         self, severity_type: SeverityType
@@ -122,12 +155,14 @@ class EmergencyQueue:
         # NOTE: Linear Search is the best in this case because the lists are not
         # sorted.
         def linear_search(
-            arr: List, new_emergency: Emergency | EncryptedEmergency
+            arr: list, new_emergency: Emergency | EncryptedEmergency
         ) -> int:
             index: int = 0
             for elem in arr:
-                if (elem[2].user_uuid == new_emergency.user_uuid) and (
-                    elem[2].emergency_id == new_emergency.emergency_id
+                if (
+                    (elem[2] is not None)
+                    and (elem[2].user_uuid == new_emergency.user_uuid)
+                    and (elem[2].emergency_id == new_emergency.emergency_id)
                 ):
                     return index
                 index += 1
@@ -137,20 +172,25 @@ class EmergencyQueue:
 
             return index
 
-        if (old_emergency_severity >= 0) and (old_emergency_severity < 35):
-            pos: int = linear_search(self.low_queue, emergency)
+        pos: int = -1
+        if (old_emergency_severity >= 0) and (
+            old_emergency_severity < self.min_medium_sev_score
+        ):
+            pos = linear_search(self.low_queue, emergency)
             if pos == -1:
                 raise ValueError("Old emergency not found")
 
             self.low_queue.pop(pos)
-        elif (old_emergency_severity >= 35) and (old_emergency_severity < 65):
-            pos: int = linear_search(self.medium_queue, emergency)
+        elif (old_emergency_severity >= self.min_medium_sev_score) and (
+            old_emergency_severity < self.min_high_sev_score
+        ):
+            pos = linear_search(self.medium_queue, emergency)
             if pos == -1:
                 raise ValueError("Old emergency not found")
 
             self.medium_queue.pop(pos)
         else:
-            pos: int = linear_search(self.high_queue, emergency)
+            pos = linear_search(self.high_queue, emergency)
             if pos == -1:
                 raise ValueError("Old emergency not found")
 

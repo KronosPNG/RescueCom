@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- Custom Element for GDPR -->
+<rescue-gdpr id="gdpr-element" logo-path="{{ url_for('static', filename='img/logoDGPR.png') }}"></rescue-gdpr>
+
+<!-- Load the Web Component Script -->
+<script src="{{ url_for('static', filename='js/legal-info.js') }}"></script>
+
+<!-- Initialize Language Logic -->
+<script>
+    (function () {
+        const gdprElement = document.getElementById('gdpr-element');
+
+        // 1. Controlla il parametro URL 'lang'
+        const urlParams = new URLSearchParams(window.location.search);
+        let lang = urlParams.get('lang');
+
+        // 2. Se non c'è il parametro URL, controlla la lingua del browser
+        if (!lang) {
+            const navLang = navigator.language || navigator.userLanguage;
+            lang = navLang.substring(0, 2).toLowerCase();
+        }
+
+        // 3. Valida le lingue supportate
+        const supportedLangs = ['it', 'en', 'es', 'fr', 'de'];
+        if (!supportedLangs.includes(lang)) {
+            lang = 'en'; // Lingua predefinita
+        }
+
+        // 4. Imposta la lingua
+        gdprElement.setAttribute('lang', lang);
+
+        // 5. Opzionale: Aggiorna il titolo del documento
+        const titles = {
+            'it': 'Informativa Privacy di RescueCom',
+            'en': 'RescueCom Privacy Policy',
+            'es': 'Política de Privacidad de RescueCom',
+            'fr': 'Politique de Confidentialité de RescueCom',
+            'de': 'RescueCom Datenschutzrichtlinie'
+        };
+        if (titles[lang]) document.title = titles[lang];
+
+    })();
+</script>
+
+{% endblock %}

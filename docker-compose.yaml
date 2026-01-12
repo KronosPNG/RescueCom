@@ -3,7 +3,18 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+    env_file: ./cloud/.env
     ports:
       - "8000:8000"
-    environment:
-      - FLASK_ENV=development
+    volumes:
+      - data:${DB_DIR}
+      - certs:${CERTIFICATE_DIR}
+      - logs:${LOGS_DIR}
+
+volumes:
+  data:
+    external: true
+  certs:
+    external: true
+  logs:
+    external: true

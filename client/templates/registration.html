@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap-icons.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href ="{{ url_for('static', filename='css/registration.css') }}" rel="stylesheet">
+    <title>Registrazione</title>
+</head>
+<body>
+    <img src="{{ url_for('static', filename='img/image.png') }}" width="100%" height="100%">
+        <form action="./" method="post">
+            <h1 id="registrazione">Registrazione</h1>
+            <div id="content_form">
+                <div class="label">
+                    <p class="obligatorio">Nome</p>
+                    <input type="text" name="name" id="" placeholder="Es. Mario" required>
+                </div>
+                <div class="label">
+                    <p class="obligatorio">Cognome</p>
+                    <input type="text" name="surname" id="" placeholder="Es. Rossi" required>
+                </div>
+                <div class="label">
+                    <p class="obligatorio">Data di nascita</p>
+                    <input type="date" name="birthday" id="data" required>
+                </div>
+                <div class="label">
+                    <p class="obligatorio">Vuoi essere un rescuer?</p>
+                    <span>Si</span>
+                    <input type="checkbox" name="is_rescuer" id="is_rescuer" required>
+                </div>
+                <div class="label">
+                        <p class="obligatorio">Gruppo Sanguigno</p>
+                    <select name="bloodtype" id="sanguigno" required>
+                        <option value="">Seleziona il gruppo</option>
+                        <option value="APOS">A+</option>
+                        <option value="ANEG">A-</option>
+                        <option value="BPOS">B+</option>
+                        <option value="BNEG">B-</option>
+                        <option value="ABPOS">AB+</option>
+                        <option value="ABNEG">AB-</option>
+                        <option value="OPOS">0+</option>
+                        <option value="ONEG">0-</option>
+                    </select>
+                </div>
+            
+                <div id="checkbox">
+                    <div class="label">
+                        <p>Disabilità</p>
+                        <input type="checkbox" name="healthinfo[disabilita]" value="Motoria (es: sedia a rotelle, paralisi, ecc...)" id="">Motoria (es: sedia a rotelle, paralisi, ecc...)
+                        <br>
+                        <input type="checkbox" name="healthinfo[disabilita]" value="Sensoriale visiva (es: cecità, ipovisione)" id="">Sensoriale visiva (es: cecità, ipovisione)
+                        <br>
+                        <input type="checkbox" name="healthinfo[disabilita]" value="Sensoriale uditiva (es: Sordità, ipoacusia)" id="">Sensoriale uditiva (es: Sordità, ipoacusia)
+                        <br>
+                        <input type="checkbox" name="healthinfo[disabilita]" value="Cognitiva/Intellettiva (es: Autismo, sindrome di Down)" id="">Cognitiva/Intellettiva (es: Autismo, sindrome di Down)
+                        <br>
+                        <input type="checkbox" name="healthinfo[disabilita]" value="Psichica: (es. Schizofrenia, disturbo bipolare)" id="">Psichica: (es. Schizofrenia, disturbo bipolare)
+                    </div>
+                </div>
+                <div id="content_button">
+                    <div id="avanti">Avanti</div>
+                </div>
+            </div>
+                <div id="second">
+                    <div id="checkbox">
+                    <div class="label">
+                        <h3>Malattie Gravi / Patologie Croniche</h3>
+                        <p>Cardiovascolari</p>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Ipertensione arteriosa" id="">Ipertensione arteriosa
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Aritmie (Fibrillazione atriale, ecc..)" id="">Aritmie (Fibrillazione atriale, ecc..)
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Insufficienza cardiaca" id="">Insufficienza cardiaca
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Portatore di Pacemaker/Defibrillatore impiantabile" id="">Portatore di Pacemaker/Defibrillatore impiantabile
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Pregresso infarto" id="">Pregresso infarto
+                    </div>
+                    <div class="label">
+                        <p>Respiratorie</p>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Asma" id="">Asma
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="BPCO (Broncopneumopatia cronica ostruttiva)" id="">BPCO (Broncopneumopatia cronica ostruttiva)
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Insufficienza respiratoria" id="">Insufficienza respiratoria
+                    </div>
+                    <div class="label">
+                        <p>Metaboliche</p>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Diabete di tipo 1" id="">Diabete di tipo 1
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Diabete di tipo 2" id="">Diabete di tipo 2
+                    </div>
+
+                    <div class="label">
+                        <p>Neurologiche</p>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Epilessia" id="">Epilessia
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Morbo di Parkinson" id="">Morbo di Parkinson
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Sclerosi multipla" id="">Sclerosi multipla
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Ictus pregresso" id="">Ictus pregresso
+                    </div>
+                     <div class="label">
+                        <p>Altro</p>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Insufficienza renale (Dialisi)" id="">Insufficienza renale (Dialisi)
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Problemi di coagulazione  - Rischio emorragie." id="">Problemi di coagulazione  - Rischio emorragie.
+                        <br>
+                        <input type="checkbox" name="healthinfo[malattie]" value="Trapianti d'organo (Immunodepressione)." id="">Trapianti d'organo (Immunodepressione).
+                    </div>
+                    <div id="content_button_second">
+                        <span id="indietro">Indietro</span>
+                        <br>
+                        <input type="submit" value="Invia" id="invia_form">
+                    </div>
+                </div>
+        </div>
+
+        </form>
+        <script>
+            var button_avanti = document.getElementById("avanti");
+            var button_indietro = document.getElementById("indietro");
+            var form = document.getElementById("content_form");
+            var another_form = document.getElementById("second");
+            button_avanti.addEventListener("click", () =>{
+                form.style.display="none";
+                another_form.style.display="flex";
+            });
+            button_indietro.addEventListener("click", () =>{
+                form.style.display="flex";
+                another_form.style.display="none";
+            });
+        </script>
+</body>
+<script>
+    // --- LOGICA DI NAVIGAZIONE (AVANTI/INDIETRO) ---
+    var button_avanti = document.getElementById("avanti");
+    var button_indietro = document.getElementById("indietro");
+    var form_content = document.getElementById("content_form"); // Rinominato per chiarezza
+    var second_part = document.getElementById("second");
+    var main_form = document.querySelector('form'); // Seleziona il tag <form>
+
+    button_avanti.addEventListener("click", () => {
+
+        form_content.style.display = "none";
+        second_part.style.display = "flex";
+    });
+
+    button_indietro.addEventListener("click", () => {
+        form_content.style.display = "flex";
+        second_part.style.display = "none";
+    });
+
+    // --- LOGICA DI COSTRUZIONE JSON PER HEALTHINFO ---
+    main_form.addEventListener("submit", function(event) {
+        // 1. Ferma l'invio standard per elaborare i dati
+        event.preventDefault();
+
+        // 2. Raccogli i valori selezionati per Disabilità
+        // Seleziona tutti gli input che hanno name="healthinfo[disabilita]" e sono checkati
+        const disabilitaChecked = document.querySelectorAll('input[name="healthinfo[disabilita]"]:checked');
+        // Crea un array con i valori e uniscili in una stringa (es: "Motoria, Visiva")
+        // Se preferisci inviare un array nel JSON, rimuovi .join(', ')
+        const disabilitaString = Array.from(disabilitaChecked).map(cb => cb.value).join(', ');
+
+        // 3. Raccogli i valori selezionati per Malattie
+        const malattieChecked = document.querySelectorAll('input[name="healthinfo[malattie]"]:checked');
+        const malattieString = Array.from(malattieChecked).map(cb => cb.value).join(', ');
+
+        // 4. Costruisci il dizionario (Oggetto JS)
+        const healthInfoObj = {
+            disabilita: disabilitaString || null, // Mette null se vuoto, o stringa vuota ""
+            malattie: malattieString || null
+        };
+
+        // 5. Converti l'oggetto in stringa JSON
+        const jsonString = JSON.stringify(healthInfoObj);
+        
+        // Esempio risultato: '{"disabilita":"Motoria","malattie":"Ipertensione, Asma"}'
+
+        // 6. Crea un input nascosto per inviare il JSON
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'healthinfo'; // Questo sarà il nome della chiave nel backend
+        hiddenInput.value = jsonString;
+        this.appendChild(hiddenInput);
+
+        // 7. Rimuovi i 'name' dalle checkbox originali
+        // Questo impedisce al form di inviare anche i dati raw "healthinfo[disabilita]"
+        // lasciando solo il nostro nuovo input JSON pulito.
+        document.querySelectorAll('input[name^="healthinfo["]').forEach(input => {
+            input.removeAttribute('name');
+        });
+
+        // 8. Invia il form manualmente ora che è pronto
+        this.submit();
+    });
+</script>
+</html>

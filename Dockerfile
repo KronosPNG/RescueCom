@@ -7,12 +7,22 @@ COPY ./cloud/requirements.txt requirements.txt
 RUN python -m pip install --upgrade pip setuptools
 RUN python -m pip install -v -r requirements.txt
 
-RUN adduser --no-create-home user
-USER user
+RUN addgroup --gid 1000 appgroup
+RUN adduser --gid 1000 --uid 1000 \
+			--disabled-password \
+			--disabled-login \
+			--no-create-home appuser
 
-COPY ./cloud ./cloud
+COPY --from=tianon/gosu /gosu /usr/local/bin/
+
 COPY ./common ./common
+COPY ./cloud/entrypoint.sh ./entrypoint.sh
+COPY ./cloud/gunicorn_config.py ./gunicorn_config.py
+COPY ./cloud ./cloud
+
+RUN chown -R appuser:appgroup /app
+RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "cloud:app"]
+ENTRYPOINT ["./entrypoint.sh"]
