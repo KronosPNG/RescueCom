@@ -97,3 +97,6 @@ pip-selfcheck.json
 
 ### Test frontend
 /client/template_viewer.py
+
+### logs
+*.log
