@@ -101,15 +101,6 @@ class DatabaseManager:
             blob BLOB NOT NULL,
             created_at DATE DEFAULT CURRENT_TIMESTAMP,
 
-            /*
-                In order to prevent the violation of
-                the foreign key constraint, when the user
-                receives an emergency from another user,
-                the sender must also send their user_uuid,
-                and the receiver must insert it into the
-                `user` table before inserting the newly
-                received emergency.
-            */
             PRIMARY KEY (emergency_id, user_uuid)
         );
         """
@@ -170,7 +161,7 @@ class DatabaseManager:
         insert_query: str = """
             INSERT INTO emergency (emergency_id, user_uuid, position, address, city, street_number, place_description,
             photo_b64, severity, resolved, emergency_type, description, details_json, created_at)
-            VALUES (SQ, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ((SELECT IFNULL(MAX(emergency_id), 0) + 1 FROM emergency), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Begin transaction
