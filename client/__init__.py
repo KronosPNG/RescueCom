@@ -88,10 +88,8 @@ def check_connection():
                 r = requests.get("http://localhost:8000/health", timeout=5)
 
                 if r.status_code == 200:
-                    response = r.json()
-                    if response.get("message") == "Cloud is healthy":
-                        connected = True
-                        break
+                    connected = True
+                    break
             except requests.RequestException:
                 pass  # server not reachable
 
