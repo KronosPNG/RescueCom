@@ -48,7 +48,7 @@ def extract_emergency_fields(
             severity=severity,
             created_at=datetime.datetime.now(datetime.UTC),
             routing_info_json=routing_info_json,
-            blob=base64.b64decode(blob.encode()),
+            blob=base64.b64decode(blob_b64.encode()),
         )
     )
 
