@@ -65,10 +65,8 @@ class Payload:
 
     @classmethod
     def unpack_data(cls: type[Self], data: bytes) -> Self:
-        if len(data) < 20:
+        if len(data) != 20:
             raise ValueError("Data must be exactly 20 bytes")
-
-        # TODO: we should do an integrity check
 
         uuid_bytes = data[:16]
         uuid_str = str(uuid.UUID(bytes=uuid_bytes))
