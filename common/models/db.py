@@ -181,7 +181,7 @@ class DatabaseManager:
             self.conn.rollback()
             raise e
 
-        return self.cursor.lastrowid
+        return next_id
 
     def insert_emergency_from_rescuee(self, emergency: emergency.Emergency) -> None:
         """
