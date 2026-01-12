@@ -2,7 +2,7 @@
 
 @font-face {
   font-family: 'BentonSans Book';
-  src: url("/app/static/css/fonts/Inter-VariableFont_opsz\,wght.ttf") format("opentype");
+  src: url("/static/css/fonts/Inter-VariableFont_opsz\,wght.ttf") format("opentype");
   font-weight: 400;          /* Book tipicamente 400 */
   font-style: normal;
   font-display: swap;

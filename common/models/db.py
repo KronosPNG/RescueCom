@@ -90,7 +90,6 @@ class DatabaseManager:
             details_json TEXT,
             created_at DATE DEFAULT CURRENT_TIMESTAMP,
 
-            FOREIGN KEY (user_uuid) REFERENCES user(uuid)
             PRIMARY KEY (emergency_id, user_uuid)
         );
 
@@ -111,7 +110,6 @@ class DatabaseManager:
                 `user` table before inserting the newly
                 received emergency.
             */
-            -- FOREIGN KEY (user_uuid) REFERENCES user(uuid),
             PRIMARY KEY (emergency_id, user_uuid)
         );
         """
@@ -170,9 +168,9 @@ class DatabaseManager:
         """
 
         insert_query: str = """
-            INSERT INTO emergency (user_uuid, position, address, city, street_number, place_description, photo_b64,
-            severity, resolved, emergency_type, description, details_json, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO emergency (emergency_id, user_uuid, position, address, city, street_number, place_description,
+            photo_b64, severity, resolved, emergency_type, description, details_json, created_at)
+            VALUES (SQ, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Begin transaction

@@ -1,3 +1,4 @@
+import traceback
 import logging
 import base64
 
@@ -50,7 +51,7 @@ def perform_handshake():
         client.NONCE = nonce
         client.CLOUD_NONCE = c_nonce
     except Exception as e:
-        logger.error(f"Handshake failed: {e}")
+        logger.error(f"Handshake failed: {traceback.format_exc()}")
 
 
 def encrypt_blob(emergency_obj) -> bytes:
@@ -61,7 +62,7 @@ def encrypt_blob(emergency_obj) -> bytes:
     try:
         return crypto.encrypt(client.ENC_CIPHER, client.NONCE, emergency_obj.pack(), b"")
     except Exception as e:
-        logger.error(f"Encryption error: {e}")
+        logger.error(f"Encryption error: {traceback.format_exc()}")
         return b""
 
 
@@ -82,18 +83,22 @@ def inject_user():
 
 # --- UI ROUTES ---
 
-@client.app.route('/')
+
+@client.app.route('/legal-info/', methods=['GET'])
+def legal_info():
+    return render_template('legal-info.html', user=None) # TODO: make global user
+
+@client.app.route('/', methods=['GET'])
 def index():
-    # Attempt handshake if UUID exists but crypto is not ready
-    if client.UUID and not client.ENC_CIPHER:
-        perform_handshake()
+    if client.IS_RESCUER is None:
+        return redirect(url_for('registration'))
 
-    if client.UUID:
+    if client.ENC_CIPHER is not None:
         return redirect(url_for('rescuer_home') if client.IS_RESCUER else url_for('rescuee_home'))
-    return redirect(url_for('welcome'))
 
+    abort(404)
 
-@client.app.route('/welcome/')
+@client.app.route('/welcome/', methods=['GET'])
 def welcome():
     return render_template('welcome.html')
 
@@ -103,11 +108,9 @@ def registration():
 
     if request.method == 'POST':
         try:
-            # 1. Prepare Data
-            is_rescuer = request.form.get('is_rescuer') == 'on'
+            is_rescuer = request.form.get('is_rescuer') == '1'
             uuid = client.UUID
 
-            # 2. Send to Cloud (User Save)
             payload = {
                 "uuid": uuid,
                 "is_rescuer": is_rescuer,
@@ -115,22 +118,18 @@ def registration():
                 "surname": request.form.get('surname'),
                 "birthday": request.form.get('birthday'),
                 "blood_type": request.form.get('bloodtype'),
-                "health_info_json": request.form.get('healthinfo') or "{}"
+                "health_info_json": request.form.get('health_info_json') or "{}"
             }
 
             requests.post(f"{CLOUD_URL}/user/save", json=payload, timeout=5).raise_for_status()
 
-            # 3. Update Client State
             client.IS_RESCUER = is_rescuer
 
-            # Persist minimal ID to file so we know who we are on restart
             with client.DATA_PATH.open('w') as f:
                 f.write(f"{client.UUID}\n{'1' if is_rescuer else '0'}")
 
-            # 4. Connect
             perform_handshake()
 
-            # 5. Update Local Memory Cache
             try:
                 b_type = BloodType[request.form.get('bloodtype')]
                 LOCAL_USER_CACHE = User(
@@ -140,38 +139,43 @@ def registration():
                     surname=request.form.get('surname'),
                     birthday=datetime.strptime(request.form.get('birthday'), '%Y-%m-%d').date(),
                     blood_type=b_type,
-                    health_info_json=request.form.get('healthinfo') or "{}"
+                    health_info_json=request.form.get('health_info_json') or "{}"
                 )
             except Exception as e:
-                logger.warning(f"Error caching user locally: {e}")
+                logger.warning(f"Error caching user locally: {traceback.format_exc()}")
 
             return redirect(url_for('rescuer_home' if is_rescuer else 'rescuee_home'))
 
         except Exception as e:
-            logger.error(f"Registration Error: {e}")
+            logger.error(f"Registration Error: {traceback.format_exc()}")
             return render_template('error.html', status_code=500), 500
 
     return render_template('registration.html')
 
+@client.app.route('/myemergencies/', methods=['GET'])
+def myemergencies():
+    try:
+        db = DatabaseManager.get_instance()
+        ems = db.get_emergencies_by_user_uuid(client.UUID)
+
+        return render_template('my_emergencies.html', sent_emergencies=ems)
+    except Exception as e:
+        logger.error(f"Get emergencies error: {traceback.format_exc()}")
+        return render_template('error.html', status_code=500), 500
 
 @client.app.route('/new/', methods=['GET', 'POST'])
 def new_emergency():
-    if not client.UUID: return redirect(url_for('welcome'))
-
     if request.method == 'POST':
         try:
-            # Generate ID and temporary object for encryption
-            em_id = random.randint(1, 10000000)
-
-            pos = (0.0, 0.0)
+            pos = ('0.0', '0.0')
             if request.form.get('position') and ',' in request.form.get('position'):
                 try:
-                    pos = tuple(map(float, request.form.get('position').split(',')))
+                    pos = tuple(request.form.get('position').split(','))
                 except:
                     pass
 
             temp_em = Emergency(
-                emergency_id=em_id,
+                emergency_id=0,
                 user_uuid=client.UUID,
                 severity=int(request.form.get('severity') or 0),
                 emergency_type=request.form.get('emergency_type'),
@@ -187,12 +191,12 @@ def new_emergency():
                 details_json=request.form.get('details_json') or ""
             )
 
+            print(temp_em.to_db_tuple())
             db = DatabaseManager.get_instance()
             out = db.insert_emergency(temp_em)
             if out is None:
                 return render_template('error.html', status_code=500), 500
 
-            # Encrypt and Send
             encrypted_blob = encrypt_blob(temp_em)
 
             payload = {
@@ -209,7 +213,7 @@ def new_emergency():
             return redirect(url_for('rescuee_home'))
 
         except Exception as e:
-            logger.error(f"New Emergency Error: {e}")
+            logger.error(f"New Emergency Error: {traceback.format_exc()}")
             return render_template('error.html', status_code=500), 500
 
     return render_template('send_emergency.html')
@@ -245,7 +249,7 @@ def rescuer_home():
 
             return redirect(url_for('rescuer_home'))
         except Exception as e:
-            logger.error(f"Accept Error: {e}")
+            logger.error(f"Accept Error: {traceback.format_exc()}")
             return render_template('error.html', status_code=500), 500
 
     # Render list from Memory Cache

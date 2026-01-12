@@ -1,3 +1,4 @@
+import traceback
 import base64
 import datetime
 import os
@@ -74,6 +75,7 @@ def create_user_from_data(
         if field not in data or data.get(field) is None
     ]
     if missing_fields:
+        app.logger.error(traceback.format_exc())
         return None, (
             jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}),
             400,
@@ -86,12 +88,12 @@ def create_user_from_data(
             name=data.get("name"),
             surname=data.get("surname"),
             birthday=data.get("birthday"),
-            blood_type=data.get("blood_type"),
+            blood_type=user.BloodType[data.get("blood_type")],
             health_info_json=data.get("health_info_json"),
         )
         return new_user, None
     except (ValueError, TypeError) as e:
-        return None, (jsonify({"error": f"Invalid data format: {str(e)}"}), 400)
+        return None, (jsonify({"error": f"Invalid data format: {traceback.format_exc()}"}), 400)
 
 
 @app.route("/emergency/submit", methods=["POST"])
@@ -111,6 +113,7 @@ def emergency_submit() -> tuple[Any, int]:
             client = cloud.CLIENTS[encrypted_emergency.user_uuid]
 
         if not client:
+            app.logger.error("Client not found")
             raise Exception("Client not found")
 
         decrypted_blob: bytes = crypto.decrypt(
@@ -122,11 +125,13 @@ def emergency_submit() -> tuple[Any, int]:
             decrypted_blob,
         )
 
+        app.logger.debug(data)
         return jsonify(
             {"message": "Emergency submitted successfully", "data": data}
         ), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(str(data))
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/emergency/accept", methods=["POST"])
@@ -180,14 +185,16 @@ def emergency_accept() -> tuple[Any, int]:
                 timeout=3,
             )
         except Exception as msg_err:
-            app.logger.error(f"Failed to send notification: {str(msg_err)}")
+            app.logger.error(str(msg_err))
 
+        app.logger.debug(data)
         return jsonify(
             {"message": "Emergency accepted successfully", "data": data}
         ), 200
 
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/emergency/update", methods=["POST"])
@@ -208,9 +215,11 @@ def emergency_update() -> tuple[Any, int]:
             encrypted_emergency,
         )
 
+        app.logger.debug(data)
         return jsonify({"message": "Emergency updated successfully", "data": data}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/emergency/delete", methods=["POST"])
@@ -225,15 +234,18 @@ def emergency_delete() -> tuple[Any, int]:
         emergency_id: Optional[int] = data.get("emergency_id")
 
         if not user_uuid or not emergency_id:
+            app.logger.error("Missing required fields: user_uuid and emergency_id")
             return jsonify(
                 {"error": "Missing required fields: user_uuid and emergency_id"}
             ), 400
 
         persistence.delete_encrypted_emergency(user_uuid, emergency_id)
 
+        app.logger.debug(data)
         return jsonify({"message": "Emergency deleted successfully", "data": data}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/user/save", methods=["POST"])
@@ -249,9 +261,12 @@ def user_save() -> tuple[Any, int]:
             return error_response
 
         persistence.save_user(new_user)
+
+        app.logger.debug(data)
         return jsonify({"message": "User saved successfully", "data": data}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/user/update", methods=["POST"])
@@ -267,9 +282,12 @@ def user_update() -> tuple[Any, int]:
             return error_response
 
         persistence.update_user(updated_user.uuid, updated_user)
+
+        app.logger.debug(data)
         return jsonify({"message": "User updated successfully", "data": data}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/user/delete", methods=["POST"])
@@ -283,12 +301,16 @@ def user_delete() -> tuple[Any, int]:
         uuid: Optional[str] = data.get("uuid")
 
         if not uuid:
+            app.logger.error("Missing required field: uuid")
             return jsonify({"error": "Missing required field: uuid"}), 400
 
         persistence.delete_user(uuid)
+
+        app.logger.debug(data)
         return jsonify({"message": "User deleted successfully", "uuid": uuid}), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/connect", methods=["POST"])
@@ -312,6 +334,7 @@ def connect() -> tuple[Any, int]:
             or not client_signature
             or is_rescuer is None
         ):
+            app.logger.error("Missing required fields")
             return jsonify({"error": "Missing required fields"}), 400
 
         cert_bytes = bytes.fromhex(cert_bytes)
@@ -320,6 +343,7 @@ def connect() -> tuple[Any, int]:
 
         client_certificate = crypto.decode_certificate(cert_bytes)
         if not crypto.verify_certificate(client_certificate, client_signature, client_nonce):
+            app.logger.error("Couldn't verify certificate or signature")
             return jsonify({"error": "Couldn't verify certificate or signature"}), 400
 
         certificate = crypto.load_certificate(cloud.CERTIFICATE_PATH)
@@ -348,6 +372,7 @@ def connect() -> tuple[Any, int]:
                     is_rescuer,
                 )
 
+        app.logger.debug("Verification successful")
         return jsonify(
             {
                 "message": "Verification successful",
@@ -357,7 +382,8 @@ def connect() -> tuple[Any, int]:
             }
         ), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/pkey", methods=["POST"])
@@ -372,6 +398,7 @@ def pkey() -> tuple[Any, int]:
         pkey_bytes = data.get("public_key")
 
         if not uuid or not pkey_bytes:
+            app.logger.error("Missing required fields")
             return jsonify({"error": "Missing required fields"}), 400
 
         pkey_bytes = bytes.fromhex(pkey_bytes)
@@ -394,11 +421,13 @@ def pkey() -> tuple[Any, int]:
                 cloud.RESCUERS[uuid].enc_cipher = enc_cipher
                 cloud.RESCUERS[uuid].dec_cipher = dec_cipher
 
+        app.logger.debug("Key exchange completed")
         return jsonify(
             {"message": "Key exchange completed", "pkey": crypto.encode_ecdh_pkey(pkey).hex()}
         ), 200
     except Exception as e:
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
 
 
 @app.route("/health", methods=["GET"])

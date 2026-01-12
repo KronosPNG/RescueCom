@@ -6,12 +6,13 @@ import datetime
 import time
 
 from common.services import crypto
+from common.models import db
 from pathlib import Path
 from typing import Optional
 from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
 from flask import Flask
-from dotenv import load_dotenv
 from threading import Thread, Lock
+from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env")
 
@@ -30,6 +31,8 @@ CERTIFICATE_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
     os.getenv("CERTIFICATE_NAME", None)
 )
 
+db.DatabaseManager.get_instance(Path(os.getenv("DB_DIR", None)) / Path(os.getenv("DB_NAME", None)))
+
 CONNECTED: bool = False
 
 mutex = Lock()
@@ -43,7 +46,9 @@ def init_info():
         DATA_PATH.touch()
 
         with DATA_PATH.open("w") as f:
-            f.write(str(uuid.uuid4()) + "\n" + "1")
+            UUID = str(uuid.uuid4())
+
+            f.write(UUID)
     else:
         with DATA_PATH.open() as f:
             UUID = f.readline().strip()

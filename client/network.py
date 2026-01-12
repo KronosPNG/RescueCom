@@ -26,7 +26,7 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path, is_rescuer: bool
         Exception: for failed connection
     """
 
-    if not isinstance(uuid, str) or not isinstance(skey_path, Path) or not isinstance(certificate_path, Path):
+    if not isinstance(uuid, str) or not isinstance(skey_path, Path) or not isinstance(certificate_path, Path) or not isinstance(is_rescuer, bool):
         raise TypeError("Wrong types for arguments")
 
     skey = crypto.load_signing_key(skey_path)
