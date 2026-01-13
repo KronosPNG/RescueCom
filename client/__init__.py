@@ -23,6 +23,7 @@ ENC_CIPHER: Optional[AESGCMSIV] = None
 NONCE: Optional[bytes] = None
 CLOUD_NONCE: Optional[bytes] = None
 USER: Optional[user.User] = None
+ACCEPTED_GDPR: Optional[bool] = None
 
 DATA_PATH = Path(os.getenv("DATA_FILE"))
 SKEY_PATH = Path(os.getenv("CERTIFICATE_DIR", None)) / Path(
@@ -40,7 +41,7 @@ mutex = Lock()
 
 
 def init_info():
-    global UUID, IS_RESCUER
+    global UUID, IS_RESCUER, ACCEPTED_GDPR
 
     if not DATA_PATH.exists():
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -54,6 +55,7 @@ def init_info():
         with DATA_PATH.open() as f:
             UUID = f.readline().strip()
             IS_RESCUER = f.readline().strip() != "0"
+            ACCEPTED_GDPR = f.readline().strip() != "0"
 
 
 def init_certificate_and_skey():

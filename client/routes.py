@@ -89,15 +89,23 @@ def legal_info():
     return render_template("legal-info.html", user=client.USER)
 
 
-@client.app.route("/", methods=["GET"])
+@client.app.route("/", methods=["GET", "POST"])
 def index():
-    if client.IS_RESCUER is None:
-        return redirect(url_for("registration"))
+    if request.method == "POST":
+        client.ACCEPTED_GDPR = True
+        return redirect(url_for("index"))
 
-    if client.ENC_CIPHER is None:
-        perform_handshake()
+    else:
+        if not client.ACCEPTED_GDPR:
+            return redirect(url_for("welcome"))
 
-    return redirect(url_for("rescuer_home") if client.IS_RESCUER else url_for("rescuee_home"))
+        if client.IS_RESCUER is None:
+            return redirect(url_for("registration"))
+
+        if client.ENC_CIPHER is None:
+            perform_handshake()
+
+        return redirect(url_for("rescuer_home") if client.IS_RESCUER else url_for("rescuee_home"))
 
 
 @client.app.route("/welcome/", methods=["GET"])
@@ -130,7 +138,7 @@ def registration():
             client.IS_RESCUER = is_rescuer
 
             with client.DATA_PATH.open("w") as f:
-                f.write(f"{client.UUID}\n{'1' if is_rescuer else '0'}")
+                f.write(f"{client.UUID}\n{'1' if is_rescuer else '0'}\n{'1' if client.ACCEPTED_GDPR else '0'}")
 
             requests.post(
                 f"{CLOUD_URL}/user/save/", json=payload, timeout=5
