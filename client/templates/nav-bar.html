@@ -13,11 +13,17 @@
             </a>
             <div id="contenuto_Rescuer">
                 {% if user %}
-                	{% if user.is_rescuer and '/rescuer' in request.path %}
+                    {% if user.is_rescuer %}
+                        {% if '/rescuer/' in request.path %}
+                            <a href="/rescuee/" class="diventa_rescuer">Passa a rescuee</a>
+                        {% else %}
+                            <a href="/rescuer/" class="diventa_rescuer">Passa a rescuer</a>
+                        {% endif %}
+                    {% else %}
                         <a href="/rescuee/" class="diventa_rescuer">Passa a rescuee</a>
-                	{% elif user.is_rescuer and '/rescuee' in request.path %}
-                        <a href="/rescuer/" class="diventa_rescuer">Passa a rescuer</a>
                     {% endif %}
+                {% else %}
+                    <span class="login-non-effettuato">Login non effettuato</span>
                 {% endif %}
             </div>
         </div>
