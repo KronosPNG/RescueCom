@@ -1,8 +1,8 @@
 import threading
 
-from bluetooth import Broadcaster, Listener
-from queues import ble_rx_queue, ble_tx_queue
-from worker import ble_worker
+from offline.bluetooth import Broadcaster, Listener
+from offline.queues import ble_rx_queue, ble_tx_queue
+from offline.worker import ble_worker
 
 
 class BLEService:
