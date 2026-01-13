@@ -30,9 +30,9 @@ class EmergencyQueue:
                 "EmergencyQueue singleton must be created using EmergencyQueue.get_instance"
             )
 
-        heapq._heapify_max(self.queue[SeverityType.LOW.value])  # Low severity
-        heapq._heapify_max(self.queue[SeverityType.MEDIUM.value])  # Medium severity
-        heapq._heapify_max(self.queue[SeverityType.HIGH.value])  # High severity
+        heapq.heapify_max(self.queue[SeverityType.LOW.value])  # Low severity
+        heapq.heapify_max(self.queue[SeverityType.MEDIUM.value])  # Medium severity
+        heapq.heapify_max(self.queue[SeverityType.HIGH.value])  # High severity
 
         self.low_queue = self.queue[SeverityType.LOW.value]
         self.medium_queue = self.queue[SeverityType.MEDIUM.value]
@@ -77,25 +77,22 @@ class EmergencyQueue:
 
         # TODO: Establish the maximum possible score
         if (severity >= 0) and (severity < self.min_medium_sev_score):
-            heapq.heappush(
+            heapq.heappush_max(
                 self.low_queue,
-                (severity, created_at, emergency),
+                (severity, created_at, (emergency)),
             )
-            heapq._heapify_max(self.low_queue)
         elif (severity >= self.min_medium_sev_score) and (
             severity < self.min_high_sev_score
         ):
-            heapq.heappush(
+            heapq.heappush_max(
                 self.medium_queue,
                 (severity, created_at, emergency),
             )
-            heapq._heapify_max(self.medium_queue)
         elif severity >= self.min_high_sev_score:
-            heapq.heappush(
+            heapq.heappush_max(
                 self.high_queue,
                 (severity, created_at, emergency),
             )
-            heapq._heapify_max(self.high_queue)
         else:
             raise ValueError("Invalid severity level")
 
@@ -122,11 +119,11 @@ class EmergencyQueue:
 
         match severity_type:
             case SeverityType.LOW:
-                return heapq._heappop_max(self.low_queue)[2]
+                return heapq.heappop_max(self.low_queue)[2]
             case SeverityType.MEDIUM:
-                return heapq._heappop_max(self.medium_queue)[2]
+                return heapq.heappop_max(self.medium_queue)[2]
             case SeverityType.HIGH:
-                return heapq._heappop_max(self.high_queue)[2]
+                return heapq.heappop_max(self.high_queue)[2]
 
     def update_emergency(
         self, old_emergency_severity: int, emergency: Emergency | EncryptedEmergency
