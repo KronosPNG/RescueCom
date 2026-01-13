@@ -47,9 +47,9 @@ def init_certificate_and_skey():
 def init_clients():
     global CLIENTS, RESCUERS
 
-    db = DatabaseManager.get_instance()
+    dbm = db.DatabaseManager.get_instance()
 
-    for user in db.get_users():
+    for user in dbm.get_users():
         uuid = user.uuid
         CLIENTS[uuid] = user
 

@@ -649,7 +649,7 @@ class DatabaseManager:
                     severity=row[2],
                     routing_info_json=row[3],
                     blob=row[4],
-                    created_at=datetime.strptime(result[5], "%Y-%m-%d %H:%M:%S.%f"),
+                    created_at=datetime.strptime(row[5], "%Y-%m-%d %H:%M:%S.%f"),
                 )
             )
 

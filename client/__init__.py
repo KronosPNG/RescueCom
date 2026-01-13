@@ -91,7 +91,7 @@ def check_connection():
 
         for _ in range(3):  # max 3 attempts
             try:
-                r = requests.get("http://localhost:8000/health", timeout=5)
+                r = requests.get("http://localhost:8000/health/", timeout=5)
 
                 if r.status_code == 200:
                     connected = True

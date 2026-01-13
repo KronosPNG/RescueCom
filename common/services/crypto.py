@@ -103,8 +103,6 @@ def load_signing_key(path: Path) -> Ed25519PrivateKey:
     except Exception as e:
         raise e
 
-    return certificate
-
 def load_certificate(path: Path) -> Certificate:
     """
     Load a certificate at a given path

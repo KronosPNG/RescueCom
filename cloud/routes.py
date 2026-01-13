@@ -173,7 +173,7 @@ def emergency_accept() -> tuple[Any, int]:
         }
 
         encrypted_message: bytes = crypto.encrypt(
-            encrypted_emergency, client.cloud_nonce, str(message).encode(), b""
+            client.enc_cipher, client.cloud_nonce, str(message).encode(), b""
         )
 
         try:
