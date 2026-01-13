@@ -1,5 +1,5 @@
+import functools
 import traceback
-import logging
 import base64
 
 import requests
@@ -9,27 +9,36 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, abort, jsonify
 from common.models.db import DatabaseManager
 
-# Import existing app and network logic
 import client
 from client import network
 from common.models.user import User, BloodType
 from common.models.emergency import Emergency
 from common.services import crypto
 
-# --- CONFIGURATION ---
 CLOUD_URL = "http://127.0.0.1:8000"
-logger = logging.getLogger(__name__)
 
 # --- IN-MEMORY STORAGE (Replaces DatabaseManager) ---
 # These act as a local cache for the running session.
 # Data is lost when the client app restarts.
-# TODO: sync with the local database
 LOCAL_USER_CACHE = None
-LOCAL_EMERGENCY_CACHE = {}  # Format: {emergency_id: EmergencyObject}
+LOCAL_EMERGENCY_CACHE = {} # Format: {emergency_id: EmergencyObject}
 
 
-# --- HELPERS ---
+def rescuer_only(route):
+    @functools.wraps(route)
+    def wrapper(*args, **kwargs):
+        if client.IS_RESCUER:
+            return route(*args, **kwargs)
+        return redirect(url_for("index"))
+    return wrapper
 
+def login_required(route):
+    @functools.wraps(route)
+    def wrapper(*args, **kwargs):
+        if client.ENC_CIPHER is not None:
+            return route(*args, **kwargs)
+        return redirect(url_for("index"))
+    return wrapper
 
 def perform_handshake():
     """
@@ -44,26 +53,25 @@ def perform_handshake():
             client.UUID, client.SKEY_PATH, client.CERTIFICATE_PATH, client.IS_RESCUER
         )
 
-        # Update globals in client module
         client.ENC_CIPHER = enc
         client.DEC_CIPHER = dec
         client.NONCE = nonce
         client.CLOUD_NONCE = c_nonce
     except Exception as e:
-        logger.error(f"Handshake failed: {traceback.format_exc()}")
+        client.app.logger.error(f"Handshake failed: {traceback.format_exc()}")
 
 
 def encrypt_blob(emergency_obj) -> bytes:
     """Encrypts emergency data using the global cipher."""
     if not client.ENC_CIPHER or not client.NONCE:
-        logger.warning("Encryption skipped: Crypto not initialized.")
+        client.app.logger.warning("Encryption skipped: Crypto not initialized.")
         return b""
     try:
         return crypto.encrypt(
             client.ENC_CIPHER, client.NONCE, emergency_obj.pack(), b""
         )
     except Exception as e:
-        logger.error(f"Encryption error: {traceback.format_exc()}")
+        client.app.logger.error(f"Encryption error: {traceback.format_exc()}")
         return b""
 
 
@@ -76,9 +84,6 @@ def decrypt_payload(b64_data: str):
     return crypto.decrypt(client.DEC_CIPHER, client.CLOUD_NONCE, encrypted_bytes, b"")
 
 
-# --- UI ROUTES ---
-
-
 @client.app.route("/legal-info/", methods=["GET"])
 def legal_info():
     return render_template("legal-info.html", user=client.USER)
@@ -89,12 +94,7 @@ def index():
     if client.IS_RESCUER is None:
         return redirect(url_for("registration"))
 
-    if client.ENC_CIPHER is not None:
-        return redirect(
-            url_for("rescuer_home") if client.IS_RESCUER else url_for("rescuee_home")
-        )
-
-    abort(404)
+    return redirect(url_for("rescuer_home") if client.IS_RESCUER else url_for("rescuee_home"))
 
 
 @client.app.route("/welcome/", methods=["GET"])
@@ -121,14 +121,14 @@ def registration():
                 "health_info_json": request.form.get("health_info_json") or "{}",
             }
 
-            requests.post(
-                f"{CLOUD_URL}/user/save/", json=payload, timeout=5
-            ).raise_for_status()
-
             client.IS_RESCUER = is_rescuer
 
             with client.DATA_PATH.open("w") as f:
                 f.write(f"{client.UUID}\n{'1' if is_rescuer else '0'}")
+
+            requests.post(
+                f"{CLOUD_URL}/user/save/", json=payload, timeout=5
+            ).raise_for_status()
 
             perform_handshake()
 
@@ -146,18 +146,19 @@ def registration():
                     health_info_json=request.form.get("health_info_json") or "{}",
                 )
             except Exception as e:
-                logger.warning(f"Error caching user locally: {traceback.format_exc()}")
+                client.app.logger.warning(f"Error caching user locally: {traceback.format_exc()}")
 
             return redirect(url_for("rescuer_home" if is_rescuer else "rescuee_home"))
 
         except Exception as e:
-            logger.error(f"Registration Error: {traceback.format_exc()}")
+            client.app.logger.error(f"Registration Error: {traceback.format_exc()}")
             return render_template("error.html", user=client.USER, status_code=500), 500
 
     return render_template("registration.html", user=client.USER)
 
 
 @client.app.route("/myemergencies/", methods=["GET"])
+@login_required
 def myemergencies():
     try:
         db = DatabaseManager.get_instance()
@@ -165,10 +166,11 @@ def myemergencies():
 
         return render_template("my_emergencies.html", user=client.USER, sent_emergencies=ems)
     except Exception as e:
-        logger.error(f"Get emergencies error: {traceback.format_exc()}")
+        client.app.logger.error(f"Get emergencies error: {traceback.format_exc()}")
         return render_template("error.html", user=client.USER, status_code=500), 500
 
 @client.app.route("/emergency/<emergency_id>", methods=["GET"])
+@login_required
 def emergency_details(emergency_id):
     try:
         em = LOCAL_EMERGENCY_CACHE.get(emergency_id)
@@ -181,10 +183,11 @@ def emergency_details(emergency_id):
 
         return render_template("emergency_status.html", user=client.USER, single_emergency=em)
     except Exception as e:
-        logger.error(f"Get emergency detail error: {traceback.format_exc()}")
+        client.app.logger.error(f"Get emergency detail error: {traceback.format_exc()}")
         return render_template("error.html", user=client.USER, status_code=500), 500
 
 @client.app.route("/edit/<emergency_id>", methods=["GET", "POST"])
+@login_required
 def emergency_update(emergency_id):
     try:
         em = LOCAL_EMERGENCY_CACHE.get(emergency_id)
@@ -195,7 +198,7 @@ def emergency_update(emergency_id):
             if not em:
                 return render_template("error.html", user=client.USER, status_code=404), 404
     except Exception as e:
-        logger.error(f"Get emergency error: {traceback.format_exc()}")
+        client.app.logger.error(f"Get emergency error: {traceback.format_exc()}")
         return render_template("error.html", user=client.USER, status_code=500), 500
 
     if request.method == "GET":
@@ -223,10 +226,11 @@ def emergency_update(emergency_id):
 
             return redirect(url_for("index"))
         except:
-            logger.error(f"Update emergency error: {traceback.format_exc()}")
+            client.app.logger.error(f"Update emergency error: {traceback.format_exc()}")
             return render_template("error.html", user=client.USER, status_code=404), 404
 
 @client.app.route("/new/", methods=["GET", "POST"])
+@login_required
 def new_emergency():
     if request.method == "POST":
         try:
@@ -279,13 +283,15 @@ def new_emergency():
             return redirect(url_for("rescuee_home"))
 
         except Exception as e:
-            logger.error(f"New Emergency Error: {traceback.format_exc()}")
+            client.app.logger.error(f"New Emergency Error: {traceback.format_exc()}")
             return render_template("error.html", user=client.USER, status_code=500), 500
 
     return render_template("send_emergency.html", user=client.USER)
 
 
 @client.app.route("/rescuer/", methods=["GET", "POST"])
+@login_required
+@rescuer_only
 def rescuer_home():
     if not client.UUID:
         return redirect(url_for("welcome"))
@@ -294,12 +300,10 @@ def rescuer_home():
         try:
             em_id = int(request.form.get("emergency_id"))
 
-            # Fetch from Memory Cache
             target_em = LOCAL_EMERGENCY_CACHE.get(em_id)
             if not target_em:
                 abort(404)
 
-            # Encrypt
             encrypted_blob = encrypt_blob(target_em)
 
             payload = {
@@ -311,36 +315,31 @@ def rescuer_home():
                 "routing_info_json": "",
             }
 
-            # Send Accept to Cloud
             requests.post(
                 f"{CLOUD_URL}/emergency/accept/", json=payload, timeout=5
             ).raise_for_status()
 
             return redirect(url_for("rescuer_home"))
         except Exception as e:
-            logger.error(f"Accept Error: {traceback.format_exc()}")
+            client.app.logger.error(f"Accept Error: {traceback.format_exc()}")
             return render_template("error.html", user=client.USER, status_code=500), 500
 
-    # Render list from Memory Cache
     emergencies_list = list(LOCAL_EMERGENCY_CACHE.values())
     return render_template("rescuer_home.html", user=client.USER, received_emergencies=emergencies_list)
 
 
 @client.app.route("/rescuee/")
+@login_required
 def rescuee_home():
     if not client.UUID:
         return redirect(url_for("welcome"))
 
-    # Filter memory cache for current user's emergencies
     my_emergencies = [
         e for e in LOCAL_EMERGENCY_CACHE.values() if e.user_uuid == client.UUID
     ]
     last_emergency = my_emergencies[-1] if my_emergencies else None
 
     return render_template("rescuee_home.html", user=client.USER, last_emergency=last_emergency)
-
-
-# --- INGRESS ROUTES (Called by Cloud) ---
 
 
 @client.app.route("/emergency/receive", methods=["POST"])
@@ -354,15 +353,14 @@ def emergency_receive():
         if not data:
             return jsonify({"error": "No data"}), 400
 
-        decrypted_blob = decrypt_payload(data["blob"])
+        decrypted_blob = decrypt_payload(data.get("blob"))
         emergency = Emergency.unpack(
-            data["emergency_id"], data["user_uuid"], decrypted_blob
+            data.get("emergency_id"), data.get("user_uuid"), decrypted_blob
         )
 
         db = DatabaseManager.get_instance()
         db.insert_emergency_from_rescuee(emergency)
 
-        # Update Memory Cache
         LOCAL_EMERGENCY_CACHE[emergency.emergency_id] = emergency
 
         return jsonify(
@@ -376,22 +374,11 @@ def emergency_receive():
 def notification_receive():
     try:
         data = request.get_json()
-        decrypted_bytes = decrypt_payload(data["message"])
+        decrypted_bytes = decrypt_payload(data.get("message"))
         notification = json.loads(decrypted_bytes.decode("utf-8"))
 
-        logger.info(f"Notification: {notification}")
-        # Logic to update UI status or alert user could go here
+        client.app.logger.info(f"Notification: {notification}")
 
         return jsonify({"message": "Received"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@client.app.errorhandler(404)
-def page_not_found(e):
-    return render_template("error.html", user=client.USER, status_code=404), 404
-
-
-@client.app.errorhandler(500)
-def internal_error(e):
-    return render_template("error.html", user=client.USER, status_code=500), 500
