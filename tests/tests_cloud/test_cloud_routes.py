@@ -229,7 +229,9 @@ def test_emergency_accept_success(
     assert response.status_code == 200
 
     mock_requests.post.assert_called_once()
-    assert mock_requests.post.call_args[0][0] == f"{client_ip}/notification/receive"
+    assert (
+        mock_requests.post.call_args[0][0] == f"http://{client_ip}/notification/receive"
+    )
 
     mock_crypto.encrypt.assert_called()
 
