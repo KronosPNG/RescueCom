@@ -289,7 +289,7 @@ class DatabaseManager:
                     is_rescuer=row[1] == 1,
                     name=row[2],
                     surname=row[3],
-                    birthday=datetime.strptime(row[4], "%Y-%m-%d %H:%M:%S.%f").date(),
+                    birthday=datetime.strptime(row[4], "%Y-%m-%d").date(),
                     blood_type=user.BloodType[row[5]],
                     health_info_json=row[6],
                 )
@@ -340,7 +340,7 @@ class DatabaseManager:
             is_rescuer=result[1] == 1,
             name=result[2],
             surname=result[3],
-            birthday=datetime.strptime(result[4], "%Y-%m-%d %H:%M:%S.%f").date(),
+            birthday=datetime.strptime(result[4], "%Y-%m-%d").date(),
             blood_type=user.BloodType[result[5]],
             health_info_json=result[6],
         )
@@ -387,7 +387,7 @@ class DatabaseManager:
                     is_rescuer=row[1] == 1,
                     name=row[2],
                     surname=row[3],
-                    birthday=datetime.strptime(row[4], "%Y-%m-%d %H:%M:%S.%f").date(),
+                    birthday=datetime.strptime(row[4], "%Y-%m-%d").date(),
                     blood_type=user.BloodType[row[5]],
                     health_info_json=row[6],
                 )
@@ -437,7 +437,7 @@ class DatabaseManager:
                     is_rescuer=row[1] == 1,
                     name=row[2],
                     surname=row[3],
-                    birthday=datetime.strptime(row[4], "%Y-%m-%d %H:%M:%S.%f").date(),
+                    birthday=datetime.strptime(row[4], "%Y-%m-%d").date(),
                     blood_type=user.BloodType[row[5]],
                     health_info_json=row[6],
                 )
