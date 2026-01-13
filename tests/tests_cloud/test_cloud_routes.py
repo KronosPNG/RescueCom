@@ -26,30 +26,31 @@ import cloud
 
 # --- 3. FIXTURES ---
 
+
 @pytest.fixture
 def client():
-    app.config['TESTING'] = True
+    app.config["TESTING"] = True
     with app.test_client() as client:
         yield client
 
 
 @pytest.fixture
 def mock_persistence():
-    with patch('cloud.routes.persistence') as mock:
+    with patch("cloud.routes.persistence") as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_requests():
-    with patch('cloud.routes.requests') as mock:
+    with patch("cloud.routes.requests") as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_crypto():
-    with patch('cloud.routes.crypto') as mock:
+    with patch("cloud.routes.crypto") as mock:
         mock.decrypt.return_value = b'{"dummy": "data"}'
-        mock.encrypt.return_value = b'encrypted_bytes'
+        mock.encrypt.return_value = b"encrypted_bytes"
 
         mock.verify_certificate.return_value = True
         mock.decode_certificate.return_value = "cert_obj"
@@ -91,7 +92,7 @@ def mock_emergency_model():
     This is critical because Emergency.unpack() will crash if we feed it
     the dummy bytes from mock_crypto.
     """
-    with patch('cloud.routes.Emergency') as mock:
+    with patch("cloud.routes.Emergency") as mock:
         mock_instance = MagicMock()
         mock_instance.emergency_id = 1
         mock_instance.user_uuid = "user-123"
@@ -101,6 +102,7 @@ def mock_emergency_model():
 
 # --- 4. TESTS ---
 
+
 def test_user_save_success(client, mock_persistence):
     payload = {
         "uuid": "user-123",
@@ -109,9 +111,9 @@ def test_user_save_success(client, mock_persistence):
         "surname": "Doe",
         "birthday": "1990-01-01",
         "blood_type": "APOS",
-        "health_info_json": "{}"
+        "health_info_json": "{}",
     }
-    response = client.post('/user/save/', json=payload)
+    response = client.post("/user/save/", json=payload)
 
     assert response.status_code == 200
     mock_persistence.save_user.assert_called_once()
@@ -125,9 +127,9 @@ def test_user_update_success(client, mock_persistence):
         "surname": "Doe",
         "birthday": "1990-01-01",
         "blood_type": "APOS",
-        "health_info_json": '{"allergies": "peanuts"}'
+        "health_info_json": '{"allergies": "peanuts"}',
     }
-    response = client.post('/user/update/', json=payload)
+    response = client.post("/user/update/", json=payload)
 
     assert response.status_code == 200
     mock_persistence.update_user.assert_called_once()
@@ -135,21 +137,15 @@ def test_user_update_success(client, mock_persistence):
 
 
 def test_user_delete_success(client, mock_persistence):
-    payload = {
-        "uuid": "user-123"
-    }
-    response = client.post('/user/delete/', json=payload)
+    payload = {"uuid": "user-123"}
+    response = client.post("/user/delete/", json=payload)
 
     assert response.status_code == 200
     mock_persistence.delete_user.assert_called_once_with("user-123")
 
 
 def test_emergency_submit_success(
-        client,
-        mock_persistence,
-        mock_crypto,
-        mock_cloud_state,
-        mock_emergency_model
+    client, mock_persistence, mock_crypto, mock_cloud_state, mock_emergency_model
 ):
     """Tests submitting an emergency."""
     user_uuid = "user-123"
@@ -163,10 +159,10 @@ def test_emergency_submit_success(
         "emergency_id": 1,
         "user_uuid": user_uuid,
         "severity": 1,
-        "blob": base64.b64encode(b"encrypted_data").decode('utf-8'),
-        "routing_info_json": "{}"
+        "blob": base64.b64encode(b"encrypted_data").decode("utf-8"),
+        "routing_info_json": "{}",
     }
-    response = client.post('/emergency/submit/', json=payload)
+    response = client.post("/emergency/submit/", json=payload)
 
     assert response.status_code == 200
     mock_crypto.decrypt.assert_called()
@@ -178,34 +174,27 @@ def test_emergency_update_success(client, mock_persistence):
         "emergency_id": 1,
         "user_uuid": "user-123",
         "severity": 2,
-        "blob": base64.b64encode(b"updated_encrypted_data").decode('utf-8'),
-        "routing_info_json": "{}"
+        "blob": base64.b64encode(b"updated_encrypted_data").decode("utf-8"),
+        "routing_info_json": "{}",
     }
 
-    response = client.post('/emergency/update/', json=payload)
+    response = client.post("/emergency/update/", json=payload)
 
     assert response.status_code == 200
     mock_persistence.update_encrypted_emergency.assert_called_once()
 
 
 def test_emergency_delete_success(client, mock_persistence):
-    payload = {
-        "emergency_id": 1,
-        "user_uuid": "user-123"
-    }
+    payload = {"emergency_id": 1, "user_uuid": "user-123"}
 
-    response = client.post('/emergency/delete/', json=payload)
+    response = client.post("/emergency/delete/", json=payload)
 
     assert response.status_code == 200
     mock_persistence.delete_encrypted_emergency.assert_called_once_with("user-123", 1)
 
 
 def test_emergency_accept_success(
-        client,
-        mock_persistence,
-        mock_crypto,
-        mock_cloud_state,
-        mock_requests
+    client, mock_persistence, mock_crypto, mock_cloud_state, mock_requests
 ):
     """
     Tests the complex flow where a Rescuer accepts an emergency,
@@ -213,7 +202,7 @@ def test_emergency_accept_success(
     """
     client_uuid = "client-123"
     rescuer_uuid = "rescuer-456"
-    client_ip = "http://192.168.1.50:5000"
+    client_ip = "192.168.1.50:5000"
 
     mock_client_dto = MagicMock()
     mock_client_dto.ip = client_ip
@@ -231,11 +220,11 @@ def test_emergency_accept_success(
         "emergency_id": 1,
         "user_uuid": client_uuid,
         "severity": 1,
-        "blob": base64.b64encode(b"encrypted_for_rescuer").decode('utf-8'),
-        "routing_info_json": "{}"
+        "blob": base64.b64encode(b"encrypted_for_rescuer").decode("utf-8"),
+        "routing_info_json": "{}",
     }
 
-    response = client.post('/emergency/accept/', json=payload)
+    response = client.post("/emergency/accept/", json=payload)
 
     assert response.status_code == 200
 
@@ -243,3 +232,4 @@ def test_emergency_accept_success(
     assert mock_requests.post.call_args[0][0] == f"{client_ip}/notification/receive"
 
     mock_crypto.encrypt.assert_called()
+
