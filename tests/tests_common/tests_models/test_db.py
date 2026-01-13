@@ -91,8 +91,7 @@ def test_singleton_same_instance():
 
 
 def test_insert_and_get_user(db, sample_user):
-    with not_raises(Exception):
-        db.insert_user(sample_user)
+    db.insert_user(sample_user)
 
     users = db.get_users()
     assert len(users) == 1
@@ -145,8 +144,7 @@ def test_delete_user(db, sample_user):
 def test_insert_emergency(db, sample_user, sample_emergency):
     db.insert_user(sample_user)
 
-    with not_raises(Exception):
-        eid = db.insert_emergency(sample_emergency)
+    eid = db.insert_emergency(sample_emergency)
 
     assert isinstance(eid, int)
 
@@ -190,8 +188,7 @@ def test_delete_emergency(db, sample_user, sample_emergency):
 def test_insert_encrypted_emergency(db, sample_user, sample_enc_emergency):
     db.insert_user(sample_user)
 
-    with not_raises(Exception):
-        db.insert_encrypted_emergency(sample_enc_emergency)
+    db.insert_encrypted_emergency(sample_enc_emergency)
 
 
 def test_update_encrypted_emergency(db, sample_user, sample_enc_emergency):
