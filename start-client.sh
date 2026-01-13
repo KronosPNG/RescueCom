@@ -9,4 +9,4 @@ mkdir -p ${CERTIFICATE_DIR}
 mkdir -p ${DB_DIR}
 touch ${DB_DIR}/${DB_NAME}
 
-gunicorn --bind 0.0.0.0:1337 client:app
+gunicorn --bind 0.0.0.0:$1 client:app
