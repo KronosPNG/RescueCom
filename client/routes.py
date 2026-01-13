@@ -122,7 +122,7 @@ def registration():
             }
 
             requests.post(
-                f"{CLOUD_URL}/user/save", json=payload, timeout=5
+                f"{CLOUD_URL}/user/save/", json=payload, timeout=5
             ).raise_for_status()
 
             client.IS_RESCUER = is_rescuer
@@ -216,7 +216,7 @@ def emergency_update(emergency_id):
             }
 
             requests.post(
-                f"{CLOUD_URL}/emergency/update", json=payload, timeout=5
+                f"{CLOUD_URL}/emergency/update/", json=payload, timeout=5
             ).raise_for_status()
 
             LOCAL_EMERGENCY_CACHE[em.emergency_id] = em
@@ -271,7 +271,7 @@ def new_emergency():
             }
 
             requests.post(
-                f"{CLOUD_URL}/emergency/submit", json=payload, timeout=5
+                f"{CLOUD_URL}/emergency/submit/", json=payload, timeout=5
             ).raise_for_status()
 
             LOCAL_EMERGENCY_CACHE[out] = temp_em
@@ -313,7 +313,7 @@ def rescuer_home():
 
             # Send Accept to Cloud
             requests.post(
-                f"{CLOUD_URL}/emergency/accept", json=payload, timeout=5
+                f"{CLOUD_URL}/emergency/accept/", json=payload, timeout=5
             ).raise_for_status()
 
             return redirect(url_for("rescuer_home"))

@@ -37,8 +37,7 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path, is_rescuer: bool
 
     certificate_bytes = crypto.encode_certificate(certificate)
 
-    # TODO: switch string to a proper name (maybe)
-    resp = requests.post("http://localhost:8000/connect", json={
+    resp = requests.post("http://localhost:8000/connect/", json={
         "uuid": uuid, "nonce": nonce.hex(), "certificate": certificate_bytes.hex(), "signature": signature.hex(), "is_rescuer": is_rescuer
         }
     )
@@ -60,7 +59,7 @@ def connect(uuid: str, skey_path: Path, certificate_path: Path, is_rescuer: bool
     skey, pkey = crypto.gen_ecdh_keys()
     encoded_pkey = crypto.encode_ecdh_pkey(pkey)
 
-    resp = requests.post("http://localhost:8000/pkey", json={"uuid": uuid, "public_key": encoded_pkey.hex()})
+    resp = requests.post("http://localhost:8000/pkey/", json={"uuid": uuid, "public_key": encoded_pkey.hex()})
     if not resp.ok:
         raise Exception("Something went wrong")
 
