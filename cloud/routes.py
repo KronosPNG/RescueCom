@@ -10,6 +10,7 @@ from typing import Optional, Any
 from flask import request, jsonify, Response
 
 import cloud
+from cloud import network
 from cloud.clientDTO import ClientDTO
 from common.models import enc_emergency, user
 from common.models.emergency import Emergency
@@ -117,13 +118,15 @@ def emergency_submit() -> tuple[Any, int]:
             raise Exception("Client not found")
 
         decrypted_blob: bytes = crypto.decrypt(
-            client.dec_cipher, client.nonce, encrypted_emergency.blob, b""
+            client.dec_cipher, client.client_nonce, encrypted_emergency.blob, b""
         )  # TODO: align with client about aad
         emergency: Emergency = Emergency.unpack(
             encrypted_emergency.emergency_id,
             encrypted_emergency.user_uuid,
             decrypted_blob,
         )
+
+        network.broadcast_emergency_to_rescuers(emergency)
 
         app.logger.debug(data)
         return jsonify(
@@ -163,7 +166,7 @@ def emergency_accept() -> tuple[Any, int]:
             raise Exception("Client couldn't be found")
 
         decrypted_blob: bytes = crypto.decrypt(
-            rescuer.dec_cipher, rescuer.nonce, encrypted_emergency.blob, b""
+            rescuer.dec_cipher, rescuer.client_nonce, encrypted_emergency.blob, b""
         )  # TODO: align with client about aad
 
         message: dict[str, str] = {
@@ -173,12 +176,12 @@ def emergency_accept() -> tuple[Any, int]:
         }
 
         encrypted_message: bytes = crypto.encrypt(
-            encrypted_emergency, client.cloud_nonce, str(message).encode(), b""
+            client.enc_cipher, client.cloud_nonce, str(message).encode(), b""
         )
 
         try:
             requests.post(
-                client.ip + "/notification/receive",
+                    "http://" + client.ip + "/notification/receive",
                 json={
                     "message": base64.b64encode(encrypted_message).decode(),
                 },
@@ -186,6 +189,9 @@ def emergency_accept() -> tuple[Any, int]:
             )
         except Exception as msg_err:
             app.logger.error(str(msg_err))
+            return jsonify({"error": f"Internal server error: {traceback.format_exc()}"}), 500
+
+        rescuer.busy = True
 
         app.logger.debug(data)
         return jsonify(
@@ -357,16 +363,16 @@ def connect() -> tuple[Any, int]:
 
         certificate = crypto.load_certificate(cloud.CERTIFICATE_PATH)
         certificate_bytes = crypto.encode_certificate(certificate)
-        nonce = os.urandom(12)
+        cloud_nonce = os.urandom(12)
         skey = crypto.load_signing_key(cloud.SKEY_PATH)
-        signature = crypto.sign(skey, nonce)
+        signature = crypto.sign(skey, cloud_nonce)
 
         cloud.CLIENTS[uuid] = ClientDTO(
             request.remote_addr,
             None,
             None,
             client_nonce,
-            nonce,
+            cloud_nonce,
             is_rescuer,
         )
 
@@ -376,7 +382,7 @@ def connect() -> tuple[Any, int]:
                 None,
                 None,
                 client_nonce,
-                nonce,
+                cloud_nonce,
                 is_rescuer,
             )
 
@@ -385,7 +391,7 @@ def connect() -> tuple[Any, int]:
             {
                 "message": "Verification successful",
                 "certificate": certificate_bytes.hex(),
-                "nonce": nonce.hex(),
+                "nonce": cloud_nonce.hex(),
                 "signature": signature.hex(),
             }
         ), 200
@@ -428,7 +434,7 @@ def pkey() -> tuple[Any, int]:
                 client_dto.ip,
                 enc_cipher,
                 dec_cipher,
-                client_dto.nonce,
+                client_dto.client_nonce,
                 client_dto.cloud_nonce,
                 client_dto.is_rescuer,
                 client_dto.busy
@@ -439,7 +445,7 @@ def pkey() -> tuple[Any, int]:
                 client_dto.ip,
                 enc_cipher,
                 dec_cipher,
-                client_dto.nonce,
+                client_dto.client_nonce,
                 client_dto.cloud_nonce,
                 client_dto.is_rescuer,
                 client_dto.busy
