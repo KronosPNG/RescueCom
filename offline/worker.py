@@ -2,8 +2,8 @@ import queue
 import threading
 import time
 
-from bluetooth import Broadcaster, Listener
-from queues import ble_rx_queue, ble_tx_queue
+from offline.bluetooth import Broadcaster, Listener
+from offline.queues import ble_rx_queue, ble_tx_queue
 
 
 def ble_worker(
