@@ -94,6 +94,9 @@ def index():
     if client.IS_RESCUER is None:
         return redirect(url_for("registration"))
 
+    if client.ENC_CIPHER is None:
+        perform_handshake()
+
     return redirect(url_for("rescuer_home") if client.IS_RESCUER else url_for("rescuee_home"))
 
 
