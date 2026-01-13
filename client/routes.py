@@ -21,7 +21,7 @@ CLOUD_URL = "http://127.0.0.1:8000"
 # These act as a local cache for the running session.
 # Data is lost when the client app restarts.
 LOCAL_USER_CACHE = None
-LOCAL_EMERGENCY_CACHE = {} # Format: {emergency_id: EmergencyObject}
+LOCAL_EMERGENCY_CACHE = {}  # Format: {emergency_id: EmergencyObject}
 
 
 def rescuer_only(route):
@@ -30,7 +30,9 @@ def rescuer_only(route):
         if client.IS_RESCUER:
             return route(*args, **kwargs)
         return redirect(url_for("index"))
+
     return wrapper
+
 
 def login_required(route):
     @functools.wraps(route)
@@ -38,7 +40,9 @@ def login_required(route):
         if client.ENC_CIPHER is not None:
             return route(*args, **kwargs)
         return redirect(url_for("index"))
+
     return wrapper
+
 
 def perform_handshake():
     """
@@ -105,7 +109,9 @@ def index():
         if client.ENC_CIPHER is None:
             perform_handshake()
 
-        return redirect(url_for("rescuer_home") if client.IS_RESCUER else url_for("rescuee_home"))
+        return redirect(
+            url_for("rescuer_home") if client.IS_RESCUER else url_for("rescuee_home")
+        )
 
 
 @client.app.route("/welcome/", methods=["GET"])
@@ -138,7 +144,9 @@ def registration():
             client.IS_RESCUER = is_rescuer
 
             with client.DATA_PATH.open("w") as f:
-                f.write(f"{client.UUID}\n{'1' if is_rescuer else '0'}\n{'1' if client.ACCEPTED_GDPR else '0'}")
+                f.write(
+                    f"{client.UUID}\n{'1' if is_rescuer else '0'}\n{'1' if client.ACCEPTED_GDPR else '0'}"
+                )
 
             requests.post(
                 f"{CLOUD_URL}/user/save/", json=payload, timeout=5
@@ -160,7 +168,9 @@ def registration():
                     health_info_json=request.form.get("health_info_json") or "{}",
                 )
             except Exception as e:
-                client.app.logger.warning(f"Error caching user locally: {traceback.format_exc()}")
+                client.app.logger.warning(
+                    f"Error caching user locally: {traceback.format_exc()}"
+                )
 
             return redirect(url_for("rescuer_home" if is_rescuer else "rescuee_home"))
 
@@ -178,10 +188,13 @@ def myemergencies():
         db = DatabaseManager.get_instance()
         ems = db.get_emergencies_by_user_uuid(client.UUID)
 
-        return render_template("my_emergencies.html", user=client.USER, sent_emergencies=ems)
+        return render_template(
+            "my_emergencies.html", user=client.USER, sent_emergencies=ems
+        )
     except Exception as e:
         client.app.logger.error(f"Get emergencies error: {traceback.format_exc()}")
         return render_template("error.html", user=client.USER, status_code=500), 500
+
 
 @client.app.route("/emergency/<emergency_id>", methods=["GET"])
 @login_required
@@ -193,12 +206,17 @@ def emergency_details(emergency_id):
             em = db.get_emergency_by_id(client.UUID, emergency_id)
 
             if not em:
-                return render_template("error.html", user=client.USER, status_code=404), 404
+                return render_template(
+                    "error.html", user=client.USER, status_code=404
+                ), 404
 
-        return render_template("emergency_status.html", user=client.USER, single_emergency=em)
+        return render_template(
+            "emergency_status.html", user=client.USER, single_emergency=em
+        )
     except Exception as e:
         client.app.logger.error(f"Get emergency detail error: {traceback.format_exc()}")
         return render_template("error.html", user=client.USER, status_code=500), 500
+
 
 @client.app.route("/edit/<emergency_id>", methods=["GET", "POST"])
 @login_required
@@ -210,13 +228,17 @@ def emergency_update(emergency_id):
             em = db.get_emergency_by_id(client.UUID, emergency_id)
 
             if not em:
-                return render_template("error.html", user=client.USER, status_code=404), 404
+                return render_template(
+                    "error.html", user=client.USER, status_code=404
+                ), 404
     except Exception as e:
         client.app.logger.error(f"Get emergency error: {traceback.format_exc()}")
         return render_template("error.html", user=client.USER, status_code=500), 500
 
     if request.method == "GET":
-        return render_template("send_emergency.html", user=client.USER, sent_emergency=em)
+        return render_template(
+            "send_emergency.html", user=client.USER, sent_emergency=em
+        )
     else:
         try:
             db = DatabaseManager.get_instance()
@@ -242,6 +264,7 @@ def emergency_update(emergency_id):
         except:
             client.app.logger.error(f"Update emergency error: {traceback.format_exc()}")
             return render_template("error.html", user=client.USER, status_code=404), 404
+
 
 @client.app.route("/new/", methods=["GET", "POST"])
 @login_required
@@ -276,7 +299,9 @@ def new_emergency():
             db = DatabaseManager.get_instance()
             out = db.insert_emergency(temp_em)
             if out is None:
-                return render_template("error.html", user=client.USER, status_code=500), 500
+                return render_template(
+                    "error.html", user=client.USER, status_code=500
+                ), 500
 
             encrypted_blob = encrypt_blob(temp_em)
 
@@ -338,8 +363,14 @@ def rescuer_home():
             client.app.logger.error(f"Accept Error: {traceback.format_exc()}")
             return render_template("error.html", user=client.USER, status_code=500), 500
 
-    emergencies_list = list(LOCAL_EMERGENCY_CACHE.values())
-    return render_template("rescuer_home.html", user=client.USER, received_emergencies=emergencies_list)
+    ems = list()
+    dbm = DatabaseManager.get_instance()
+    ems_from_db = dbm.get_emergencies()
+
+    emergencies_list = list(ems_from_db)
+    return render_template(
+        "rescuer_home.html", user=client.USER, received_emergencies=emergencies_list
+    )
 
 
 @client.app.route("/rescuee/")
@@ -353,7 +384,9 @@ def rescuee_home():
     ]
     last_emergency = my_emergencies[-1] if my_emergencies else None
 
-    return render_template("rescuee_home.html", user=client.USER, last_emergency=last_emergency)
+    return render_template(
+        "rescuee_home.html", user=client.USER, last_emergency=last_emergency
+    )
 
 
 @client.app.route("/emergency/receive", methods=["POST"])

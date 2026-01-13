@@ -138,7 +138,7 @@ def receive_bluetooth_payload():
                 severity=p.severity,
                 position=p.position,
                 emergency_type="Unknow",
-                description="Emergency from Blutooth",
+                description="Emergency from Bluetooth",
                 created_at=datetime.datetime.now(),
             )
             dbm = db.DatabaseManager.get_instance()
