@@ -2,14 +2,13 @@ import base64
 import requests
 
 import cloud
-from cloud import clientDTO
 
 from common.models import emergency, enc_emergency
 from common.services import crypto, emergency_queue
 
 def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
     """
-    Multicast an emergency to available Rescuers
+    Broadcast an emergency to available Rescuers
 
     Args:
         emergency (Emergency): emergency to send to Rescuers
@@ -25,13 +24,13 @@ def broadcast_emergency_to_rescuers(emergency: emergency.Emergency):
             severity=emergency.severity,
             routing_info_json="",  # unnecessary in this case
             blob=crypto.encrypt(
-                rescuer.enc_cipher, rescuer.nonce, emergency.pack(), b""
+                rescuer.enc_cipher, rescuer.cloud_nonce, emergency.pack(), b""
             ),
             created_at=emergency.created_at,
         )
 
         resp = requests.post(
-            rescuer.ip + "/emergency/receive",
+            "http://" + rescuer.ip + "/emergency/receive",
             json={
                 "encrypted_emergency": base64.b64encode(
                     str(encrypted_emergency.to_db_tuple()).encode()

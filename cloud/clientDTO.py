@@ -6,7 +6,7 @@ class ClientDTO:
     ip: str
     enc_cipher: AESGCMSIV
     dec_cipher: AESGCMSIV
-    nonce: bytes
+    client_nonce: bytes
     cloud_nonce: bytes
     is_rescuer: bool
     busy: bool = False
