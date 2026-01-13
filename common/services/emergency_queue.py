@@ -79,7 +79,7 @@ class EmergencyQueue:
         if (severity >= 0) and (severity < self.min_medium_sev_score):
             heapq.heappush(
                 self.low_queue,
-                (severity, created_at, (emergency)),
+                (severity, created_at, emergency),
             )
             heapq._heapify_max(self.low_queue)
         elif (severity >= self.min_medium_sev_score) and (
