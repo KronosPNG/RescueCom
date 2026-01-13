@@ -106,6 +106,9 @@ def welcome():
 def registration():
     global LOCAL_USER_CACHE
 
+    if client.ENC_CIPHER is not None:
+        return redirect(url_for("index"))
+
     if request.method == "POST":
         try:
             is_rescuer = request.form.get("is_rescuer") == "on"
