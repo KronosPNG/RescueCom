@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container">
+  <p class="fs-4">Ciao, <span class="fw-semibold">{{ user.name }}</span></p>
+  <div class="d-flex justify-content-center mb-3">
+    <a class="btn btn-lg btn-danger" href="/new/">INVIA RICHIESTA DI SOCCORSO <i class="bi bi-exclamation-circle"></i></a>
+  </div>
+  
+  {% if last_emergency %}
+  <h3>Ultima richiesta inviata</h3>
+  <div class="container rounded-3 p-3" style="background-color: #f5f5f5">
+    <p>
+      Data invio: <span class="fw-semibold">{{ last_emergency.created_at.strftime('%d/%m/%Y %H:%M') }}</span><br>
+      Stato: <span class="fw-semibold">{% if last_emergency.resolved %}Accettata{% else %}In attesa{% endif %}</span>
+    </p>
+    {% if last_emergency.resolved %}
+    <div class="alert alert-success">
+      <h4 class="alert-heading">Richiesta accettata!</h4>
+      <p class="mb-0">Un soccorritore sta arrivando.</p>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="container rounded-3 p-3 text-center" style="background-color: #f5f5f5">
+    <p class="mb-0">Nessuna richiesta inviata di recente.</p>
+  </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-center mt-3">
+    <a class="btn btn-primary" href="/myemergencies/">Guarda Storico Richieste inviate</a>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nav-bar.css') }}">
+
+    <div id="nav-bar">
+        <div id="content">
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <a href="/" id="img">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" width="200px" id="logo">
+            </a>
+            <div id="contenuto_Rescuer">
+                {% if user %}
+                    {% if user.is_rescuer %}
+                        {% if '/rescuer/' in request.path %}
+                            <a href="/rescuee/" class="diventa_rescuer">Passa a rescuee</a>
+                        {% else %}
+                            <a href="/rescuer/" class="diventa_rescuer">Passa a rescuer</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="/rescuee/" class="diventa_rescuer">Passa a rescuee</a>
+                    {% endif %}
+                {% else %}
+                    <span class="login-non-effettuato">Login non effettuato</span>
+                {% endif %}
+            </div>
+        </div>
+        <div id="divisore"></div>
+        <a href="/new/" class="nav">
+            Invia richiesta di soccorso
+        </a>
+        <a href="/myemergencies/" class="nav">
+            Storico Richieste inviate
+        </a>
+    </div>
+    
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+            // Seleziona l'hamburger e la barra di navigazione
+                const hamburger = document.getElementById('hamburger');
+                const navBar = document.getElementById('nav-bar');
+                const divisore = document.getElementById('divisore')
+                // Aggiungi l'evento click
+                hamburger.addEventListener('click', () => {
+                    // Alterna la classe 'open' sul contenitore principale
+                    navBar.classList.toggle('open');
+                });
+            });
+        </script>

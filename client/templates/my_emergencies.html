@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <h2 class="mb-4">Richieste di soccorso inviate</h2>
+
+    {% if sent_emergencies %}
+    {% for emergency in sent_emergencies %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center">
+                <strong>
+                    ID: {{ emergency.emergency_id }} |
+                    PRIORITÀ: {{ emergency.severity }}
+                </strong>
+
+                <span class="badge bg-secondary">
+                        {% if emergency.resolved %}Accettata{% else %}In corso{% endif %}
+                    </span>
+
+                <a href="/emergency/{{ emergency.emergency_id }}"
+                   class="btn btn-primary btn-sm ms-2"
+                   title="Visualizza dettagli">
+                    <i class="bi bi-eye-fill"></i>
+                </a>
+            </div>
+
+            <hr>
+
+            <!-- Info principali -->
+            <h5 class="mb-1">
+                Tipo emergenza: {{ emergency.emergency_type }}
+            </h5>
+
+            <small class="text-muted">
+                {{ emergency.created_at.strftime('%d/%m/%Y %H:%M') }}
+            </small>
+
+            <!-- MAPPA -->
+            {% if emergency.position %}
+            <div id="map-{{ emergency.emergency_id }}"
+                 class="mt-3"
+                 style="height: 250px; width: 100%; display: none;">
+            </div>
+            {% endif %}
+
+            <p class="mt-2 mb-1">
+                Descrizione: {{ emergency.description }}
+            </p>
+
+            <!-- Foto -->
+            {% if emergency.photo_b64 %}
+            <p class="mt-2"><strong>Foto:</strong></p>
+            <img src="data:image/jpeg;base64,{{ emergency.photo_b64 }}"
+                 alt="Foto emergenza"
+                 class="img-fluid mb-2">
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>Nessuna richiesta inviata.</p>
+    {% endif %}
+
+</div>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    if (typeof L !== "undefined") {
+        {% for emergency in sent_emergencies %}
+        {% if emergency.position %}
+        (function () {
+            const mapDiv = document.getElementById('map-{{ emergency.emergency_id }}');
+            mapDiv.style.display = "block";
+
+            const map = L.map(mapDiv).setView(
+                [{{ emergency.position[0] }}, {{ emergency.position[1] }}],
+            13
+        );
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            L.marker([
+                {{ emergency.position[0] }},
+            {{ emergency.position[1] }}
+        ]).addTo(map);
+
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        })();
+        {% endif %}
+        {% endfor %}
+    }
+</script>
+{% endblock %}
