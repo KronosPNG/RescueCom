@@ -115,4 +115,6 @@ check_connection_thread.start()
 
 app = Flask(__name__)
 
+app.config["MAX_CONTENT_LENGTH"] = None
+
 from client import routes
